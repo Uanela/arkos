@@ -558,5 +558,103 @@ describe("Error Handlers", () => {
         );
       });
     });
+
+    describe("Prisma 7 driver adapter error objects", () => {
+      const adapterError = (cause: Record<string, any>) => ({
+        name: "PrismaClientKnownRequestError",
+        code: "P2002",
+        meta: { driverAdapterError: { name: "DriverAdapterError", cause } },
+      });
+
+      it("should resolve unique constraint fields from the adapter cause", () => {
+        const err = adapterError({
+          kind: "UniqueConstraintViolation",
+          constraint: { fields: ["email", "username"] },
+        });
+
+        const result = errorHandlers.handleUniqueConstraintError(err);
+        expect(result.statusCode).toBe(409);
+        expect(result.message).toBe(
+          "Duplicate unique field(s) 'email', 'username'"
+        );
+        expect(result.code).toBe("DuplicateRecords");
+      });
+
+      it("should resolve a single unique constraint index", () => {
+        const err = adapterError({
+          kind: "UniqueConstraintViolation",
+          constraint: { index: "roles_short_code_key" },
+        });
+
+        const result = errorHandlers.handleUniqueConstraintError(err);
+        expect(result.message).toBe(
+          "Duplicate unique field(s) 'roles_short_code_key'"
+        );
+      });
+
+      it("should resolve column for length mismatch", () => {
+        const err = {
+          meta: {
+            driverAdapterError: {
+              cause: { kind: "LengthMismatch", column: "email" },
+            },
+          },
+        } as any;
+
+        const result = errorHandlers.handleFieldValueTooLargeError(err);
+        expect(result.message).toBe(
+          'The value for the field "email" is too large. Please provide a smaller value.'
+        );
+      });
+
+      it("should resolve constraint for null constraint violation", () => {
+        const err = {
+          meta: {
+            driverAdapterError: {
+              cause: {
+                kind: "NullConstraintViolation",
+                constraint: { fields: ["email"] },
+              },
+            },
+          },
+        } as any;
+
+        const result = errorHandlers.handleConstraintFailedError(err);
+        expect(result.message).toBe(
+          'A database constraint "email" failed. Please review your input data.'
+        );
+      });
+
+      it("should map a bare DriverAdapterError by kind in handleDriverAdapterError", () => {
+        const err = {
+          name: "DriverAdapterError",
+          cause: {
+            kind: "UniqueConstraintViolation",
+            constraint: { fields: ["email"] },
+          },
+        };
+
+        const result = errorHandlers.handleDriverAdapterError(err);
+        expect(result).toBeInstanceOf(AppError);
+        expect(result?.statusCode).toBe(409);
+        expect(result?.message).toBe("Duplicate unique field(s) 'email'");
+      });
+
+      it("should return null for an unknown adapter kind", () => {
+        const err = { name: "DriverAdapterError", cause: { kind: "Whatever" } };
+        expect(errorHandlers.handleDriverAdapterError(err)).toBeNull();
+      });
+
+      it("should extract the model from meta.model on P2025", () => {
+        const err = {
+          code: "P2025",
+          meta: { model: "User", operation: "update" },
+        } as any;
+
+        const result = errorHandlers.handleNonExistingRecord(err);
+        expect(result.statusCode).toBe(400);
+        expect(result.code).toBe("InlineUserRecordNotFound");
+      });
+    });
   });
 });

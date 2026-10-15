@@ -6,6 +6,7 @@ import watermarkStamper from "./utils/watermark-stamper";
 import sheu from "../sheu";
 import { getArkosConfig } from "../helpers/arkos-config.helpers";
 import { lastLoadedEnvFiles } from '../dotenv.helpers';
+import { assertRequiredPackageVersion } from "./utils/dependency-version-check";
 
 interface StartOptions {
   port?: string;
@@ -27,6 +28,8 @@ export async function startCommand(options: StartOptions = {}) {
 
 
   try {
+    assertRequiredPackageVersion();
+
     const { port, host } = options;
 
     const config = getArkosConfig();

@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { promisify } from "util";
 import {
   extractRequestInfo,
+  optimizeImage,
   processFile,
   processImage,
   adjustRequestUrl,
@@ -149,159 +150,137 @@ describe("File Upload Helpers", () => {
   });
 
   describe("processImage", () => {
+    let mockTransformer: any;
+
     beforeEach(() => {
-      // Mock sharp
-      const mockTransformer = {
+      mockTransformer = {
         metadata: jest.fn().mockResolvedValue({ width: 1000, height: 800 }),
+        rotate: jest.fn().mockReturnThis(),
         resize: jest.fn().mockReturnThis(),
         toFormat: jest.fn().mockReturnThis(),
         toFile: jest.fn().mockResolvedValue(undefined),
       };
       (sharp as any as jest.Mock).mockReturnValue(mockTransformer);
 
-      // Mock fs functions
       (fs.rename as any as jest.Mock) = jest
         .fn()
-        .mockImplementation((tempPath, origPath) => {
-          return true;
-        });
+        .mockImplementation(() => true);
       (fs.stat as any as jest.Mock) = jest
         .fn()
-        .mockReturnValue({ isFile: () => true });
+        .mockReturnValue({ isFile: () => true, size: 123 });
       (fs.unlink as any as jest.Mock) = jest
         .fn()
-        .mockImplementation((path, callback) => {
-          callback(null);
+        .mockImplementation((_path, callback) => {
+          if (typeof callback === "function") callback(null);
         });
     });
 
     it("should process a non-image file without transformations", async () => {
-      const mockFilePath = "documents/test.pdf";
-      // const mockFilePath = "/app/uploads/documents/test.pdf";
-      const options = {};
-
       mockReq.params.fileType = "documents";
 
       const result = await processImage(
         mockReq,
         mockNext,
-        mockFilePath,
-        options
+        "documents/test.pdf",
+        {}
       );
 
       expect(sharp).not.toHaveBeenCalled();
       expect(result).toBe("https://example.com/api/uploads/documents/test.pdf");
     });
 
-    it("should process an image file with resizeTo option", async () => {
-      const mockFilePath = "images/test.jpg";
-      // const mockFilePath = "/app/uploads/images/test.jpg";
-      const options = { resizeTo: 500 };
-
+    it("should default to webp and auto-orient the image", async () => {
       mockReq.params.fileType = "images";
 
-      const result = await processImage(
-        mockReq,
-        mockNext,
-        mockFilePath,
-        options
-      );
+      const result = await processImage(mockReq, mockNext, "images/test.jpg", {});
 
-      expect(sharp).toHaveBeenCalledWith(mockFilePath);
-      expect(sharp().resize).toHaveBeenCalledWith(625, 500);
-      expect(sharp().toFile).toHaveBeenCalled();
+      expect(sharp).toHaveBeenCalledWith("images/test.jpg");
+      expect(mockTransformer.rotate).toHaveBeenCalled();
+      expect(mockTransformer.toFormat).toHaveBeenCalledWith("webp", {});
       expect(fs.rename).toHaveBeenCalled();
-      expect(result).toBe("https://example.com/api/uploads/images/test.jpg");
+      expect(result).toBe("https://example.com/api/uploads/images/test.webp");
     });
 
-    it("should process an image file with width and height options", async () => {
-      const mockFilePath = "images/test.png";
-      const options = { width: 300, height: 200 };
-
+    it("should resize to fit within the target without enlarging", async () => {
       mockReq.params.fileType = "images";
 
-      const result = await processImage(
-        mockReq,
-        mockNext,
-        mockFilePath,
-        options
-      );
-
-      expect(sharp).toHaveBeenCalledWith(mockFilePath);
-      expect(sharp().resize).toHaveBeenCalledWith(300, 200, { fit: "inside" });
-      expect(result).toBe("https://example.com/api/uploads/images/test.png");
-    });
-
-    it("should convert image format to webp if requested", async () => {
-      const mockFilePath = "images/test.jpg";
-      const options = { format: "webp" };
-
-      mockReq.params.fileType = "images";
-
-      const result = await processImage(
-        mockReq,
-        mockNext,
-        mockFilePath,
-        options
-      );
-
-      expect(sharp).toHaveBeenCalledWith(mockFilePath);
-      expect(sharp().toFormat).toHaveBeenCalledWith("webp");
-      expect(result).toBe("https://example.com/api/uploads/images/test.jpg");
-    });
-
-    it("should convert image format to jpeg if requested", async () => {
-      const mockFilePath = "images/test.png";
-      const options = { format: "jpeg" };
-
-      mockReq.params.fileType = "images";
-
-      const result = await processImage(
-        mockReq,
-        mockNext,
-        mockFilePath,
-        options
-      );
-
-      expect(sharp).toHaveBeenCalledWith(mockFilePath);
-      expect(sharp().toFormat).toHaveBeenCalledWith("jpeg");
-      expect(result).toBe("https://example.com/api/uploads/images/test.png");
-    });
-
-    it("should handle errors and clean up temp files", async () => {
-      const mockFilePath = "test.jpg";
-      // const mockFilePath = "/app/uploads/images/test.jpg";
-      const options = {};
-
-      const error = new Error("Image processing failed");
-      (sharp().toFile as jest.Mock).mockRejectedValue(error);
-
-      await expect(
-        processImage(mockReq, mockNext, mockFilePath, options)
-      ).resolves.toBe(null);
-
-      expect(fs.stat).toHaveBeenCalled();
-      expect(fs.unlink).toHaveBeenCalled();
-      expect(mockNext).toHaveBeenCalled();
-    });
-
-    it("should handle non-existent temp files gracefully", async () => {
-      const mockFilePath = "/app/uploads/images/test.jpg";
-      const options = {};
-
-      const error = new Error("Image processing failed");
-      (sharp().toFile as jest.Mock).mockRejectedValue(error);
-      (fs.stat as any as jest.Mock).mockImplementation((path, callback) => {
-        callback(new Error("File not found"), null);
+      await processImage(mockReq, mockNext, "images/test.jpg", {
+        resizeTo: 500,
       });
 
-      await expect(
-        processImage(mockReq, mockNext, mockFilePath, options)
-      ).resolves.toBe(null);
+      expect(mockTransformer.resize).toHaveBeenCalledWith(500, 500, {
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    });
 
-      expect(fs.stat).toHaveBeenCalled();
-      expect(fs.unlink).not.toHaveBeenCalled();
-      expect(mockNext).toHaveBeenCalled();
+    it("should resize by width and height", async () => {
+      mockReq.params.fileType = "images";
+
+      await processImage(mockReq, mockNext, "images/test.png", {
+        width: 300,
+        height: 200,
+      });
+
+      expect(mockTransformer.resize).toHaveBeenCalledWith(300, 200, {
+        fit: "inside",
+      });
+    });
+
+    it("should apply quality to lossy formats", async () => {
+      mockReq.params.fileType = "images";
+
+      await processImage(mockReq, mockNext, "images/test.jpg", {
+        format: "webp",
+        quality: 70,
+      });
+
+      expect(mockTransformer.toFormat).toHaveBeenCalledWith("webp", {
+        quality: 70,
+      });
+    });
+
+    it("should use the requested format as the output extension", async () => {
+      mockReq.params.fileType = "images";
+
+      const result = await processImage(mockReq, mockNext, "images/test.png", {
+        format: "jpeg",
+      });
+
+      expect(mockTransformer.toFormat).toHaveBeenCalledWith("jpeg", {});
+      expect(result).toBe("https://example.com/api/uploads/images/test.jpeg");
+    });
+
+    it("should replace the original without deleting the output when the format is unchanged", async () => {
+      const result = await optimizeImage("images/test.webp", {});
+
+      expect(result).toBe("images/test.webp");
+      expect(fs.unlink).toHaveBeenCalled();
+      expect(fs.rename).toHaveBeenCalled();
+    });
+
+    it("should forward an error when processing fails", async () => {
+      mockReq.params.fileType = "images";
+      mockTransformer.toFile.mockRejectedValue(new Error("Image failed"));
+
+      const result = await processImage(mockReq, mockNext, "images/test.jpg", {});
+
+      expect(result).toBe(null);
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Image failed" })
+      );
+    });
+
+    it("should fall back to the original file on unsupported format", async () => {
+      mockReq.params.fileType = "images";
+      mockTransformer.toFile.mockRejectedValue(
+        new Error("Input file contains unsupported image format")
+      );
+
+      const result = await processImage(mockReq, mockNext, "images/test.bmp", {});
+
+      expect(result).toBe("https://example.com/api/uploads/images/test.bmp");
+      expect(mockNext).not.toHaveBeenCalled();
     });
   });
 });

@@ -104,11 +104,17 @@ class FileUploadJsonSchemaGenerator {
         name: "resizeTo",
         in: "query",
         required: false,
-        schema: {
-          type: "string",
-          enum: ["cover", "contain", "fill", "inside", "outside"],
-        },
-        description: "Resize strategy (only applicable for fileType=images)",
+        schema: { type: "integer", minimum: 1 },
+        description:
+          "Target size in pixels to fit within, keeps aspect ratio (only applicable for fileType=images)",
+      },
+      {
+        name: "quality",
+        in: "query",
+        required: false,
+        schema: { type: "integer", minimum: 1, maximum: 100 },
+        description:
+          "Output quality for lossy formats like webp/jpeg/avif (only applicable for fileType=images)",
       },
     ];
   }

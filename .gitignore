@@ -16,3 +16,6 @@ debug.log
 .ignored
 .cache
 .git-backup
+AGENTS.md
+.agents
+.claude

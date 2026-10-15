@@ -7,6 +7,7 @@ import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
 import watermarkStamper from "./utils/watermark-stamper";
 import { getArkosConfig } from "../helpers/arkos-config.helpers";
+import { assertRequiredPackageVersion } from "./utils/dependency-version-check";
 
 interface DevOptions {
   port?: string;
@@ -26,6 +27,8 @@ export async function devCommand(options: DevOptions = {}) {
   let restartTimeout: NodeJS.Timeout | null = null;
 
   try {
+    assertRequiredPackageVersion();
+
     const { port, host } = options;
 
     const config = getArkosConfig();
@@ -47,14 +50,28 @@ export async function devCommand(options: DevOptions = {}) {
       process.cwd(),
       `.arkos/index.d.ts`
     );
+    const configTypesPath = path.resolve(process.cwd(), `.arkos/config.d.ts`);
+    const configPath = path.resolve(process.cwd(), `arkos.config.${fileExt}`);
+
+    // Regenerate when the config-derived types are older than the config itself.
+    let configTypesStale = false;
+    try {
+      configTypesStale =
+        fs.existsSync(configTypesPath) &&
+        fs.existsSync(configPath) &&
+        fs.statSync(configPath).mtimeMs > fs.statSync(configTypesPath).mtimeMs;
+    } catch {
+      /* ignore: config types are regenerated on the next run */
+    }
+
     if (
       fileExt === "ts" &&
-      !fs.existsSync(baseServiceTypesPath) &&
+      (!fs.existsSync(baseServiceTypesPath) || configTypesStale) &&
       fs.existsSync(path.resolve(path.join(process.cwd(), "prisma")))
     ) {
       console.info("\nGenerating arkos types and prisma client...");
       console.log("");
-      execSync(`npx arkos prisma generate`);
+      execSync(`npx arkos generate`);
     }
 
     const getEnv = () =>

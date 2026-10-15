@@ -25,6 +25,8 @@ import { RequestHandler } from "express";
 import {
   extractRequestInfo,
   generateRelativePath,
+  ImageOptimizationOptions,
+  optimizeImage,
 } from "../../../../modules/file-upload/utils/helpers/file-upload.helpers";
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { catchAsync } from "../../../../exports/error-handler";
@@ -182,6 +184,61 @@ function configHasNestedArrayPaths(config: UploadConfig): boolean {
   }
   return false;
 }
+
+const isImageFile = (file: ArkosFile): boolean =>
+  !!file?.mimetype?.includes?.("image");
+
+const collectUploadedFiles = (req: ArkosRequest): ArkosFile[] => {
+  if (req.file) return [req.file as ArkosFile];
+  if (Array.isArray(req.files)) return req.files as ArkosFile[];
+  if (req.files && typeof req.files === "object")
+    return Object.values(req.files).flat() as ArkosFile[];
+  return [];
+};
+
+const getImageOptionsForFile = (
+  config: UploadConfig,
+  file: ArkosFile
+): ImageOptimizationOptions | undefined => {
+  const baseOptions = (config as ArkosRouterBaseUploadConfig).image;
+  if (config.type !== "fields") return baseOptions;
+
+  const field = config.fields.find((entry) => {
+    if (entry.name === file.fieldname) return true;
+    try {
+      return buildPathMatcher(entry.name).test(file.fieldname);
+    } catch {
+      return false;
+    }
+  }) as
+    | (UploadConfigFieldEntry & { image?: ImageOptimizationOptions })
+    | undefined;
+
+  return field?.image ?? baseOptions;
+};
+
+const optimizeUploadedImages = async (
+  config: UploadConfig,
+  files: ArkosFile[]
+): Promise<void> => {
+  for (const file of files) {
+    try {
+      const optimizedPath = await optimizeImage(
+        file.path,
+        getImageOptionsForFile(config, file)
+      );
+      file.path = optimizedPath;
+      file.filename = path.basename(optimizedPath);
+      try {
+        file.size = (await promisify(fs.stat)(optimizedPath)).size;
+      } catch {}
+    } catch (error: any) {
+      if (error?.message === "Input file contains unsupported image format")
+        continue;
+      throw new AppError(error.message, 400, "CannotProcessImage", { error });
+    }
+  }
+};
 
 /**
  * Narrows a field entry to its typed props.
@@ -537,7 +594,8 @@ class UploadManager {
 
   handlePostUpload(config: UploadConfig) {
     return catchAsync(
-      (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+      async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+        // eslint-disable-next-line no-console
         const { baseURL, baseRoute } = extractRequestInfo(req);
         const arkosConfig = getArkosConfig();
 
@@ -674,6 +732,10 @@ class UploadManager {
         };
 
         try {
+          const imageFiles = collectUploadedFiles(req).filter(isImageFile);
+          if (imageFiles.length > 0)
+            await optimizeUploadedImages(config, imageFiles);
+
           if (config.type === "single") {
             if (isNestedArrayPath(config.field)) {
               const filesObj = req.files as {
@@ -769,6 +831,7 @@ class UploadManager {
             }
           }
         } catch (err: any) {
+          if (err instanceof AppError) throw err;
           throw new AppError(
             `File uploads post processing failed ${err.message}`,
             500,

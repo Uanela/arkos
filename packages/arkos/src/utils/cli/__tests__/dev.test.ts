@@ -17,6 +17,7 @@ jest.mock("../../helpers/fs.helpers", () => ({
 }));
 jest.mock("../utils/cli.helpers");
 jest.mock("../../dotenv.helpers", () => ({
+  loadEnvironmentVariables: jest.fn(() => []),
   lastLoadedEnvFiles:
     [
       `/test/project/.env`,
@@ -395,7 +396,7 @@ describe("Dev Command", () => {
           expect.stringContaining("Missing base services types")
         );
         expect(mockStdoutWrite).not.toHaveBeenCalledWith(
-          expect.stringContaining("npx arkos prisma generate")
+          expect.stringContaining("npx arkos generate")
         );
       });
 
@@ -406,7 +407,7 @@ describe("Dev Command", () => {
 
         expect(sheu.warn).not.toHaveBeenCalled();
         expect(mockStdoutWrite).not.toHaveBeenCalledWith(
-          expect.stringContaining("npx arkos prisma generate")
+          expect.stringContaining("npx arkos generate")
         );
       });
 

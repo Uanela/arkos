@@ -48,8 +48,8 @@ describe("prismaGenerateCommand", () => {
       recursive: true,
     });
 
-    // index.d.ts, esm/index.js
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
+    // index.d.ts, config.d.ts, esm/index.js
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(3);
 
     expect(sheu.done).toHaveBeenCalledWith(
       `Types and values for arkos and prisma client generated successfully!`
@@ -75,6 +75,30 @@ describe("prismaGenerateCommand", () => {
       expect.any(String),
       { encoding: "utf8" }
     );
+  });
+
+  it("should write config.d.ts exposing RuntimeArkosConfig", () => {
+    prismaGenerateCommand();
+
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      `${MOCK_PKG_DIR}/config.d.ts`,
+      expect.any(String),
+      { encoding: "utf8" }
+    );
+
+    const configCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("config.d.ts")
+    );
+    expect(configCall[1]).toContain("export type RuntimeArkosConfig");
+  });
+
+  it("should re-export config types from index.d.ts", () => {
+    prismaGenerateCommand();
+
+    const dtsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("index.d.ts")
+    );
+    expect(dtsCall[1]).toContain('export type * from "./config";');
   });
 
   it("should generate correct type definitions for models", () => {
