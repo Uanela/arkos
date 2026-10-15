@@ -14,6 +14,7 @@ jest.mock("fs", () => ({
     unlink: jest.fn(),
   },
   readdirSync: jest.fn(),
+  readFileSync: jest.fn(() => ""),
 }));
 jest.mock("util");
 jest.mock("../../../../../exports");

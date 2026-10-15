@@ -8,6 +8,7 @@ import exportAuthActionCommand from "../export-auth-action";
 
 jest.mock("child_process");
 jest.mock("../../dotenv.helpers", () => ({
+  loadEnvironmentVariables: jest.fn(() => []),
   lastLoadedEnvFiles: [
     ".env",
     ".env.local",

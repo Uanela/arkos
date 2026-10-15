@@ -17,6 +17,7 @@ jest.mock("../../helpers/fs.helpers", () => ({
 }));
 jest.mock("../utils/cli.helpers");
 jest.mock("../../dotenv.helpers", () => ({
+  loadEnvironmentVariables: jest.fn(() => []),
   lastLoadedEnvFiles:
     [
       `/test/project/.env`,
