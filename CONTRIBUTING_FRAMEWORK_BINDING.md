@@ -10,7 +10,7 @@
 ```
 @arkosjs/websockets-client     # pure TS core — the real logic lives here
 @arkosjs/react-websockets      # ✅ shipped — reference implementation
-@arkosjs/svelte-websockets     # 🚧 needs a Svelte user
+@arkosjs/svelte-websockets     # ✅ shipped — integrations/svelte-websockets
 @arkosjs/solid-websockets      # 🚧 needs a Solid user
 @arkosjs/vue-websockets        # 🚧 needs a Vue user
 @arkosjs/angular-websockets    # 🚧 needs an Angular user
@@ -97,125 +97,17 @@ chat.user; // reactive: user object | null
 
 ## Svelte
 
-> **Needs a Svelte 5 user to test and validate.**
+> ✅ **Shipped and tested:** see [`integrations/svelte-websockets`](integrations/svelte-websockets) and the [Svelte tic-tac-toe example](examples/tic-tac-toe-websockets/frontend-svelte).
 
-```ts
-// integrations/svelte-websockets/src/context.ts
-import { setContext, getContext, onDestroy } from "svelte";
-import { Manager } from "socket.io-client";
-import {
-  createWebsocketClient,
-  type WebsocketClient,
-} from "@arkosjs/websockets-client";
+Testing the AI-drafted version that used to be here against a real Svelte 5 app turned up these problems, all fixed in the package:
 
-const KEY = Symbol("arkos-client");
-
-export function initArkosClient(manager: Manager): WebsocketClient {
-  const client = createWebsocketClient(manager);
-  setContext(KEY, client);
-  onDestroy(() => client.destroy());
-  return client;
-}
-
-export function getArkosClient(): WebsocketClient {
-  return getContext(KEY);
-}
-```
-
-```svelte
-<!-- integrations/svelte-websockets/ArkosProvider.svelte -->
-<script lang="ts">
-  import { initArkosClient } from "./context"
-
-  interface Props {
-    manager: any
-  }
-
-  const { manager } = $props()
-
-  initArkosClient(manager)
-</script>
-
-<slot />
-```
-
-```ts
-// integrations/svelte-websockets/src/use-gateway.ts
-import { writable, readable, get } from "svelte/store";
-import { getArkosClient } from "./context";
-import { onDestroy } from "svelte";
-import type { ArkosEmitOptions } from "@arkosjs/websockets-client";
-
-export function useGateway(namespace: string) {
-  const client = getArkosClient();
-  const gateway = client.gateway(namespace);
-
-  // Reactive status store
-  const status = writable(gateway.status);
-  const user = writable(gateway.user);
-
-  const unsub = gateway.subscribe({
-    onStatus: (s) => status.set(s),
-    onUser: (u) => user.set(u),
-  });
-  onDestroy(unsub);
-
-  function on<T = any>(event: string, handler: (data: T) => void) {
-    const off = gateway.on(event, handler);
-    onDestroy(off);
-  }
-
-  function useEmit<TData extends Record<string, any>>(
-    event: string,
-    defaultOptions?: ArkosEmitOptions
-  ) {
-    const loading = writable(false);
-    const error = writable<string | null>(null);
-    const lastEmittedAt = writable<number | null>(null);
-
-    function emit(data: TData, options?: ArkosEmitOptions) {
-      lastEmittedAt.set(Date.now());
-      error.set(null);
-
-      const merged = { ...defaultOptions, ...options };
-      if (!merged.ack) {
-        gateway.emit(event, data);
-        return;
-      }
-
-      loading.set(true);
-      return (gateway.emit(event, data, merged as any) as Promise<any>)
-        .then((r) => {
-          if (!r.success) error.set(r.error ?? "Emit failed");
-          return r;
-        })
-        .catch((e: any) => {
-          error.set(e?.message ?? "Unknown error");
-        })
-        .finally(() => loading.set(false));
-    }
-
-    return {
-      emit,
-      loading: { subscribe: loading.subscribe },
-      error: { subscribe: error.subscribe },
-      lastEmittedAt: { subscribe: lastEmittedAt.subscribe },
-      reset: () => {
-        error.set(null);
-        loading.set(false);
-      },
-    };
-  }
-
-  return {
-    on,
-    useEmit,
-    status: { subscribe: status.subscribe },
-    user: { subscribe: user.subscribe },
-    raw: gateway,
-  };
-}
-```
+- **`<slot />`** is deprecated in Svelte 5 runes components. The provider uses `{@render children?.()}`.
+- **Stores only.** `chat.status` was a store object, so it couldn't be read directly in runes code. Handles now expose rune-backed getters (`chat.status`) *and* implement the store contract (`$chat.status`).
+- **No namespace re-subscription.** `useGateway` now accepts a getter (`() => namespace`) and moves status, user, `on` listeners and emitters to the new gateway.
+- **`on()` relied on `onDestroy`**, so it threw when called outside component init (e.g. in an `$effect`). Listeners are now tracked per handle and cleaned up once.
+- **Emitting inside an `$effect` looped forever:** the effect read `loading` and re-ran when the ack resolved. Emits are now `untrack`ed.
+- **Concurrent ack emits:** `loading` flipped to `false` when the *first* ack resolved. It now stays `true` until every pending ack settles, and `reset()` ignores acks already in flight.
+- **Manager changes were ignored.** A new `manager` prop now swaps the client without remounting children.
 
 ---
 
