@@ -132,6 +132,13 @@ chat.status; // "connected" | "disconnected" | "reconnecting" | "connecting"
 chat.user; // { id, email, ... } | null
 ```
 
+| Status         | When                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------- |
+| `connecting`   | First connection in progress                                                            |
+| `connected`    | Namespace connected                                                                     |
+| `reconnecting` | Connection lost; the Manager is retrying (stays here across failed attempts)            |
+| `disconnected` | Not connected, and not retrying yet: dropped, closed on purpose, refused by the server (e.g. auth), or retries exhausted |
+
 ---
 
 ## API Reference
