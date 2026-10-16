@@ -1,0 +1,65 @@
+{
+  "name": "@arkosjs/svelte-websockets",
+  "version": "0.1.0",
+  "description": "Svelte 5 bindings for Arkos WebSocket Gateway",
+  "type": "module",
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "author": "Uanela Como",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uanela/arkos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uanela/arkos/issues"
+  },
+  "homepage": "https://www.arkosjs.com",
+  "keywords": [
+    "arkos",
+    "svelte",
+    "svelte5",
+    "websockets",
+    "socket.io"
+  ],
+  "scripts": {
+    "build": "svelte-package -i src -o dist",
+    "prepublishOnly": "pnpm build",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@arkosjs/websockets-client": "link:../websockets-client",
+    "@sveltejs/package": "^3.0.1",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@types/node": "^24.12.3",
+    "jsdom": "^30.1.3",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12",
+    "vitest": "^5.0.5",
+    "ws": "^8.21.3"
+  },
+  "peerDependencies": {
+    "@arkosjs/websockets-client": "^0.2.0",
+    "socket.io-client": "^4.7.0",
+    "svelte": "^5.0.0"
+  }
+}
