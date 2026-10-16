@@ -205,11 +205,16 @@ tictactoeGateway.on({ event: "make_move", ack: true }, (socket, data, ack) => {
         ? room.players.find((p) => p.mark === result)
         : undefined;
 
-    socket.to(roomId).emit("game_over", {
+    const gameOverPayload = {
       board: room.board,
       result,
       winnerUsername: winnerPlayer?.username ?? null,
-    });
+    };
+
+    // socket.to() excludes the sender, so the player who made the final
+    // move needs its own emit
+    socket.to(roomId).emit("game_over", gameOverPayload);
+    socket.emit("game_over", gameOverPayload);
 
     rooms.delete(roomId);
   }

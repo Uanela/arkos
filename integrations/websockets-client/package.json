@@ -19,13 +19,17 @@
   "scripts": {
     "build": "rm -r ./dist && tsc && tsx script/post-build.ts",
     "prepublishOnly": "pnpm build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "socket.io-client": "^4.7.0"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "@types/node": "^24.19.2",
+    "socket.io": "^4.8.4",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
   },
   "peerDependencies": {
     "socket.io-client": "^4.7.0"
