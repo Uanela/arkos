@@ -1,5 +1,6 @@
 import { getPackageJson } from "../../helpers/global.helpers";
 import { getArkosConfig } from "../../helpers/arkos-config.helpers";
+import ExitError from "../../helpers/exit-error";
 
 export const SUPPORTED_ZOD_MAJOR = 4;
 
@@ -65,7 +66,7 @@ function assertZodVersion(): void {
 
   if (major === null || major >= SUPPORTED_ZOD_MAJOR) return;
 
-  throw new Error(
+  throw ExitError(
     `Unsupported zod version. Arkos 1.8+ requires at least zod 4, please install zod 4 instead.`
   );
 }

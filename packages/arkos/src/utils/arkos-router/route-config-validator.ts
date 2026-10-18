@@ -2,6 +2,7 @@ import { ArkosRouteConfig } from "./types";
 import { isClass, isZodSchema } from "../dynamic-loader";
 import { getArkosConfig } from "../../exports";
 import { OpenAPIV3 } from "openapi-types";
+import ExitError from "../helpers/exit-error";
 
 export default class RouteConfigValidator {
   static isArkosRouteConfig(arg: any): arg is ArkosRouteConfig {
@@ -27,7 +28,7 @@ export default class RouteConfigValidator {
         const isClassValidator = isClass(schema);
 
         if (isZod && !["hybrid", "zod"].includes(swaggerMode as string)) {
-          throw new Error(
+          throw ExitError(
             `Zod schema used in validation.${key} but Swagger mode is '${swaggerMode}'. ` +
               `Zod schemas are only supported when swagger.mode is 'zod' or 'hybrid'.`,
           );
@@ -37,7 +38,7 @@ export default class RouteConfigValidator {
           isClassValidator &&
           !["hybrid", "class-validator"].includes(swaggerMode as string)
         ) {
-          throw new Error(
+          throw ExitError(
             `Class validator used in validation.${key} but Swagger mode is '${swaggerMode}'. ` +
               `Class validators are only supported when swagger.mode is 'class-validator' or 'hybrid'.`,
           );
@@ -53,7 +54,7 @@ export default class RouteConfigValidator {
         config.validation.query &&
         openapi.parameters?.some((p: any) => p.in === "query")
       ) {
-        throw new Error(
+        throw ExitError(
           "Duplicate query validation definitions. " +
             "When using validation.query, do not define query parameters in openapi.parameters. " +
             "They will be automatically migrated to OpenAPI specification.",
@@ -64,7 +65,7 @@ export default class RouteConfigValidator {
         config.validation.params &&
         openapi.parameters?.some((p: any) => p.in === "params")
       ) {
-        throw new Error(
+        throw ExitError(
           "Duplicate path parameter validation definitions. " +
             "When using validation.params, do not define path parameters in openapi.parameters. " +
             "They will be automatically migrated to OpenAPI specification.",
@@ -72,7 +73,7 @@ export default class RouteConfigValidator {
       }
 
       if (config.validation.body && openapi.requestBody) {
-        throw new Error(
+        throw ExitError(
           "Duplicate request body validation definitions. " +
             "When using validation.body, do not define openapi.requestBody in openapi. " +
             "It will be automatically migrated to OpenAPI specification.",

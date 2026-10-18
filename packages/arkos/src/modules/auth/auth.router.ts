@@ -21,6 +21,7 @@ import { UserArkosConfig } from "../../utils/define-config";
 import authOpenAPIGenerator from "./utils/auth-openapi-generator";
 import { AuthRouterEndpoint, RouteHook } from "../../types/router-config";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
+import ExitError from "../../utils/helpers/exit-error";
 
 const router = ArkosRouter();
 
@@ -44,7 +45,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
     if (routerValidator.isExpressRouter(customRouter))
       router.use({ path: "/auth" }, customRouter);
     else
-      throw Error(
+      throw ExitError(
         `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express or arkos Router.`,
       );
   }

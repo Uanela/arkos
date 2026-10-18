@@ -187,7 +187,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           };
 
           if ([null, undefined].includes(path as any))
-            throw new Error(
+            throw ExitError(
               "Please pass valid value for path field to use in your route"
             );
 

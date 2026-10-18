@@ -1,6 +1,7 @@
 import { RouterConfig } from "../../exports";
 import fs from "fs";
 import { UserArkosConfig } from "../define-config";
+import ExitError from "./exit-error";
 
 /**
  * Applies strict routing rules to module configuration
@@ -156,7 +157,7 @@ export function validateRouterConfigConsistency(
       newWayValue !== undefined &&
       oldWayValue !== newWayValue
     ) {
-      throw new Error(
+      throw ExitError(
         `Conflicting disabled values for endpoint "${endpoint}" of module ${appModule}: ` +
           `disable.${endpoint} = ${oldWayValue}, but ${endpoint}.disabled = ${newWayValue}. ` +
           `Please use only one method to disable endpoints.`

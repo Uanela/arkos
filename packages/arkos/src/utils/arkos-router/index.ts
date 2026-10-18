@@ -8,6 +8,7 @@ import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy"
 import { Arkos } from "../../types/arkos";
 import { ArkosRouterBaseUploadConfig } from "./types/upload-config";
 import uploadManager from "./utils/helpers/upload-manager";
+import ExitError from "../helpers/exit-error";
 
 export type ArkosRouterOptions = {
   /**
@@ -227,7 +228,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
         param.in === "path" &&
         param.name !== "*"
       )
-        throw new Error(
+        throw ExitError(
           `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`,
         );
     }
