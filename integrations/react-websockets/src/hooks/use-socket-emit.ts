@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import type {
   GatewayClient,
   ArkosEmitOptions,
@@ -64,12 +64,6 @@ export function useSocketEmit<
   const [error, setError] = useState<string | null>(null);
   const [lastEmittedAt, setLastEmittedAt] = useState<number | null>(null);
 
-  // Stable ref so emit callback doesn't change identity on every render
-  const gatewayRef = useRef(gateway);
-  useRef(() => {
-    gatewayRef.current = gateway;
-  });
-
   const emit = useCallback(
     (data: TData, options?: ArkosEmitOptions) => {
       const mergedOptions = { ...defaultOptions, ...options };
@@ -78,14 +72,14 @@ export function useSocketEmit<
 
       if (!mergedOptions.ack) {
         // Fire and forget — no state changes beyond lastEmittedAt
-        gatewayRef.current.emit(event, data);
+        gateway.emit(event, data);
         return;
       }
 
       // Ack mode — track loading
       setLoading(true);
       return (
-        gatewayRef.current.emit(
+        gateway.emit(
           event,
           data,
           mergedOptions as ArkosEmitOptions & { ack: true }
@@ -106,7 +100,7 @@ export function useSocketEmit<
           setLoading(false);
         });
     },
-    [event, defaultOptions]
+    [gateway, event, defaultOptions]
   ) as SocketEmitter<TData, TResponse>["emit"];
 
   const reset = useCallback(() => {
