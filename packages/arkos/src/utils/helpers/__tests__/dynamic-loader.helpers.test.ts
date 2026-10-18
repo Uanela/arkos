@@ -9,6 +9,12 @@ import { ArkosConfig, RouterConfig } from "../../../exports";
 jest.mock("../../dynamic-loader", () => ({
   getModuleComponents: jest.fn(),
 }));
+jest.mock("../exit-error", () => ({
+  __esModule: true,
+  default: jest.fn((message: string) => {
+    throw new Error(message);
+  }),
+}));
 
 describe("applyStrictRoutingRules", () => {
   const mockArkosConfig: any = {

@@ -17,6 +17,12 @@ import routerValidator from "../../base/utils/router-validator";
 jest.mock("../../../utils/helpers/prisma.helpers", () => ({
   getPrismaInstance: jest.fn(() => ({})),
 }));
+jest.mock("../../../utils/helpers/exit-error", () => ({
+  __esModule: true,
+  default: jest.fn((message: string) => {
+    throw new Error(message);
+  }),
+}));
 jest.mock("../../error-handler/utils/catch-async");
 jest.mock("fs");
 jest.mock("../../../utils/arkos-router", () => {

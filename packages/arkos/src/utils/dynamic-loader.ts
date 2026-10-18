@@ -147,11 +147,11 @@ export async function processSubdir(
 
           const cleanFilePath = `src/modules/${kebabCase(modelName)}/${fileName}`;
           if (type === "dtos" && !isClass(module?.default))
-            throw Error(
+            throw ExitError(
               `ValidationError: Please export as default a valid class under ${cleanFilePath}, in order to use as Dto.`
             );
           else if (type === "schemas" && !isZodSchema(module?.default))
-            throw Error(
+            throw ExitError(
               `ValidationError: Please export as default a valid zod schema under ${cleanFilePath}, in order to use as Schema`
             );
 

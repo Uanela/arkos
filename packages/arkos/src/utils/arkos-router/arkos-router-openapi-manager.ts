@@ -5,6 +5,7 @@ import {
   UploadConfig,
   UploadConfigFieldEntry,
 } from "./types/upload-config";
+import ExitError from "../helpers/exit-error";
 
 class ArkosRouterOpenAPIManager {
   private resolveSchemaFieldName(name: string): string {
@@ -252,7 +253,7 @@ class ArkosRouterOpenAPIManager {
     }
 
     if (errors.length > 0) {
-      throw new Error(
+      throw ExitError(
         `ValidationError: Invalid multipart/form-data schema for route '${routePath}':\n${errors.map((e) => `  - ${e}`).join("\n")}`
       );
     }
