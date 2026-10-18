@@ -5,7 +5,10 @@
   "main": "dist/exports/index.js",
   "module": "dist/exports/index.js",
   "types": "dist/exports/index.d.ts",
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "author": "Uanela Como",
   "license": "MIT",
   "repository": {
@@ -17,14 +20,23 @@
   },
   "homepage": "https://www.arkosjs.com",
   "scripts": {
-    "build": "rm -r ./dist && tsc",
+    "build": "rm -rf ./dist && tsc -p tsconfig.build.json",
     "prepublishOnly": "pnpm build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "^30.1.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "tsup": "^8.0.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.4"
   },
   "peerDependencies": {
     "@arkosjs/websockets-client": "^0.2.0",
