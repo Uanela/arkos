@@ -300,14 +300,14 @@ This package is the **core** used by all official Arkos framework bindings. If y
 | Framework | Package                       | Status                      |
 | --------- | ----------------------------- | --------------------------- |
 | React     | `@arkosjs/react-websockets`   | ✅ Available                |
+| Vue       | `@arkosjs/vue-websockets`     | ✅ Available                |
 | Svelte    | `@arkosjs/svelte-websockets`  | 🚧 Looking for contributors |
-| Vue       | `@arkosjs/vue-websockets`     | 🚧 Looking for contributors |
 | Solid     | `@arkosjs/solid-websockets`   | 🚧 Looking for contributors |
 | Angular   | `@arkosjs/angular-websockets` | 🚧 Looking for contributors |
 
 Each adapter wraps this core in your framework's reactivity primitives (hooks, stores, services, etc.).
 
-**Want to contribute a binding?** See [CONTRIBUTING_FRAMEWORK_BINDINGS.md](../../CONTRIBUTING_FRAMEWORK_BINDINGS.md).
+**Want to contribute a binding?** See [CONTRIBUTING_FRAMEWORK_BINDING.md](../../CONTRIBUTING_FRAMEWORK_BINDING.md).
 
 ---
 
@@ -322,8 +322,9 @@ Each adapter wraps this core in your framework's reactivity primitives (hooks, s
 ## Related
 
 - [ArkosGateway Documentation](https://www.arkosjs.com/docs/core-concepts/components/gateways)
-- [Contributing Framework Bindings](../../CONTRIBUTING_FRAMEWORK_BINDINGS.md)
+- [Contributing Framework Bindings](../../CONTRIBUTING_FRAMEWORK_BINDING.md)
 - [`@arkosjs/react-websockets`](../react-websockets)
+- [`@arkosjs/vue-websockets`](../vue-websockets)
 
 ---
 

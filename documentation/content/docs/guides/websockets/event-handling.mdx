@@ -31,7 +31,7 @@ gateway.on(
 | `maxAge`        | `number` (ms)                        | Rejects messages older than this, based on `data._meta.timestamp`.                                                                 |
 | `dedup`         | `{ enabled?, ttl? } \| false`        | Per-event override of deduplication.                                                                                               |
 
-`maxAge` and `dedup` are covered in full in [Deduplication and Freshness](/docs/guides/websockets/advanced/deduplication-and-freshness) — in short: `dedup` protects you from a client firing the same event twice (retries, double-clicks), `maxAge` protects you from processing a message that's simply too old to matter anymore (a queued action from a client that just reconnected after five minutes offline). Both are opt-in per event and both key off `data._meta`, which the [client SDK](/docs/guides/websockets/advanced/frontend-integrations) injects automatically.
+`maxAge` and `dedup` are covered in full in [Deduplication and Freshness](/docs/guides/websockets/advanced/deduplication-and-freshness) — in short: `dedup` protects you from a client firing the same event twice (retries, double-clicks), `maxAge` protects you from processing a message that's simply too old to matter anymore (a queued action from a client that just reconnected after five minutes offline). Both are opt-in per event and both key off `data._meta`, which the [client SDK](/docs/guides/websockets/frontend-integration) injects automatically.
 
 ## Handler signature
 

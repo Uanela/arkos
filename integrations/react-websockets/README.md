@@ -68,6 +68,10 @@ export default function App() {
 
 The provider creates and owns the `WebsocketClient`. It's destroyed automatically on unmount.
 
+Because the manager is memoized on `accessToken` above, logging in or out builds a new
+`Manager` — and the provider rebuilds the client around it, so the new token is what the
+sockets actually connect with. The previous client is destroyed.
+
 ### 2. Use `useGateway` in any child component
 
 ```tsx
@@ -126,9 +130,19 @@ Provides the `WebsocketClient` to the React tree. Mount once at your app root.
 | Prop       | Type                                | Description                                       |
 | ---------- | ----------------------------------- | ------------------------------------------------- |
 | `manager`  | `Manager` (from `socket.io-client`) | Socket.IO manager with connection config and auth |
+| `options`  | `Partial<SocketOptions>`            | Extra socket.io options merged into every namespace socket |
 | `children` | `ReactNode`                         | Your component tree                               |
 
 The client is destroyed automatically when the provider unmounts.
+
+Passing a **new `manager` instance** rebuilds the client and destroys the old one. This is
+what makes re-authentication work: memoize the manager on your token, and pass the new
+instance down when the token changes.
+
+Only the manager's *identity* is compared. Changing `options` alone does not rebuild the
+client — it is normally an inline object literal, so keying on it would rebuild on every
+render. `options` is read when the client is created, which is why it carries your token
+across a manager change.
 
 ---
 
@@ -350,7 +364,20 @@ import type {
 | ---------------------------- | ---------- |
 | `react`                      | `>=17.0.0` |
 | `socket.io-client`           | `^4.7.0`   |
-| `@arkosjs/websockets-client` | `*`        |
+| `@arkosjs/websockets-client` | `^0.2.0`   |
+
+---
+
+## Development
+
+```bash
+pnpm test        # vitest, jsdom
+pnpm typecheck
+pnpm build
+```
+
+Tests run the real `@arkosjs/websockets-client` against a fake socket.io layer, so they
+cover the binding-to-core contract rather than a mocked core.
 
 ---
 
@@ -358,7 +385,8 @@ import type {
 
 - [Arkos WebSocket Gateway Docs](https://www.arkosjs.com/docs/core-concepts/components/gateways)
 - [`@arkosjs/websockets-client`](../websockets-client) — Core package
-- [Contributing Framework Bindings](../../CONTRIBUTING_FRAMEWORK_BINDINGS.md)
+- [`@arkosjs/vue-websockets`](../vue-websockets) — Vue bindings
+- [Contributing Framework Bindings](../../CONTRIBUTING_FRAMEWORK_BINDING.md)
 
 ---
 
