@@ -1,6 +1,6 @@
 # Tic Tac Toe — WebSockets Example
 
-A real-time multiplayer Tic Tac Toe game built with [Arkos.js](https://arkosjs.com), demonstrating end-to-end WebSocket usage with `ArkosGateway` on the backend and `@arkosjs/websockets-client` / `@arkosjs/react-websockets` on the frontend.
+A real-time multiplayer Tic Tac Toe game built with [Arkos.js](https://arkosjs.com), demonstrating end-to-end WebSocket usage with `ArkosGateway` on the backend and `@arkosjs/websockets-client` / `@arkosjs/react-websockets` / `@arkosjs/svelte-websockets` on the frontend.
 
 ## Structure
 
@@ -8,7 +8,8 @@ A real-time multiplayer Tic Tac Toe game built with [Arkos.js](https://arkosjs.c
 tic-tac-toe-websockets/
 ├── backend/               # Arkos.js server + ArkosGateway
 ├── frontend-js/           # Vanilla HTML/CSS/JS (no bundler)
-└── frontend-react/        # React + Vite using @arkosjs/react-websockets
+├── frontend-react/        # React + Vite using @arkosjs/react-websockets
+└── frontend-svelte/       # Svelte 5 + Vite using @arkosjs/svelte-websockets
 ```
 
 ## How it works
@@ -50,6 +51,14 @@ pnpm install
 pnpm dev
 ```
 
+**Svelte 5**: see [`frontend-svelte/README.md`](frontend-svelte/README.md) (build the linked packages first), then:
+
+```bash
+cd frontend-svelte
+pnpm install
+pnpm dev
+```
+
 Open the app in **two browser tabs** to play against yourself, or share the URL with someone on the same network.
 
 ## Key packages
@@ -57,6 +66,7 @@ Open the app in **two browser tabs** to play against yourself, or share the URL 
 - [`arkos`](https://www.npmjs.com/package/arkos) — backend framework
 - [`@arkosjs/websockets-client`](https://www.npmjs.com/package/@arkosjs/websockets-client) — framework-agnostic WebSocket client
 - [`@arkosjs/react-websockets`](https://www.npmjs.com/package/@arkosjs/react-websockets) — React hooks for Arkos WebSockets
+- [`@arkosjs/svelte-websockets`](../../integrations/svelte-websockets) — Svelte 5 bindings for Arkos WebSockets
 
 ## Related
 
