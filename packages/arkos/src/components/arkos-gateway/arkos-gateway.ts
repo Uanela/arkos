@@ -242,14 +242,40 @@ export class IArkosGateway {
    * @example
    * const io = new Server(server)
    * chatGateway.register(io)
+   *
+   * // with options
+   * chatGateway.register(io, { store: redisStore })
+   *
+   * // run code once the gateway is mounted
+   * chatGateway.register(io, { store: redisStore }, () => {
+   *   console.log("gateway mounted on", chatGateway.nsp.name)
+   * })
+   *
+   * The callback overload is available from 1.8.0-rc.
    */
-  register(io: Server, options: ArkosGatewayRegisterOptions = {}): void {
+  register(io: Server, callback?: () => void): void;
+  register(
+    io: Server,
+    options: ArkosGatewayRegisterOptions,
+    callback?: () => void,
+  ): void;
+  register(
+    io: Server,
+    optionsOrCallback: ArkosGatewayRegisterOptions | (() => void) = {},
+    callback?: () => void,
+  ): void {
+    const options =
+      typeof optionsOrCallback === "function" ? {} : optionsOrCallback;
+    const onRegistered =
+      typeof optionsOrCallback === "function" ? optionsOrCallback : callback;
+
     if ((io as any)._arkosGatewayRegistered)
       throw new Error(
         `The method gateway.register() can only be called once per io server instance. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/guides/web-sockets/setup.`,
       );
     (io as any)._arkosGatewayRegistered = true;
     this._register(io, undefined, this.hooks || [], this.pipes || [], options);
+    onRegistered?.();
   }
 
   private _register(

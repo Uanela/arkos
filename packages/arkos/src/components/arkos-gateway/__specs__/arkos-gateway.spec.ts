@@ -472,6 +472,113 @@ describe("IArkosGateway", () => {
     });
   });
 
+  describe("register()", () => {
+    it("should register with neither options nor callback", () => {
+      const { mockIo } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const registerSpy = jest
+        .spyOn(gateway as any, "_register")
+        .mockImplementation(() => {});
+
+      gateway.register(mockIo);
+
+      expect(registerSpy).toHaveBeenCalledWith(mockIo, undefined, [], [], {});
+    });
+
+    it("should accept a callback as the second argument", () => {
+      const { mockIo } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const registerSpy = jest
+        .spyOn(gateway as any, "_register")
+        .mockImplementation(() => {});
+      const callback = jest.fn();
+
+      gateway.register(mockIo, callback);
+
+      expect(registerSpy).toHaveBeenCalledWith(mockIo, undefined, [], [], {});
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it("should accept options as the second argument", () => {
+      const { mockIo } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const registerSpy = jest
+        .spyOn(gateway as any, "_register")
+        .mockImplementation(() => {});
+      const options = { store: {} as any };
+
+      gateway.register(mockIo, options);
+
+      expect(registerSpy).toHaveBeenCalledWith(
+        mockIo,
+        undefined,
+        [],
+        [],
+        options,
+      );
+    });
+
+    it("should accept options and callback", () => {
+      const { mockIo } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const registerSpy = jest
+        .spyOn(gateway as any, "_register")
+        .mockImplementation(() => {});
+      const options = { store: {} as any };
+      const callback = jest.fn();
+
+      gateway.register(mockIo, options, callback);
+
+      expect(registerSpy).toHaveBeenCalledWith(
+        mockIo,
+        undefined,
+        [],
+        [],
+        options,
+      );
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it("should call the callback after registration completes", () => {
+      const { mockIo } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const registerSpy = jest
+        .spyOn(gateway as any, "_register")
+        .mockImplementation(() => {});
+      const callback = jest.fn();
+
+      gateway.register(mockIo, callback);
+
+      expect(registerSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        callback.mock.invocationCallOrder[0],
+      );
+    });
+
+    it("should not call the callback when registration throws", () => {
+      const { mockIo } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      jest.spyOn(gateway as any, "_register").mockImplementation(() => {
+        throw new Error("boom");
+      });
+      const callback = jest.fn();
+
+      expect(() => gateway.register(mockIo, callback)).toThrow("boom");
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("should throw when registering the same io instance twice", () => {
+      const { mockIo } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      jest.spyOn(gateway as any, "_register").mockImplementation(() => {});
+
+      gateway.register(mockIo);
+
+      expect(() => gateway.register(mockIo)).toThrow(
+        "can only be called once per io server instance",
+      );
+    });
+  });
+
   describe("_register()", () => {
     it("should create namespace with own name when no parent", () => {
       const { mockIo } = createMockIo();
