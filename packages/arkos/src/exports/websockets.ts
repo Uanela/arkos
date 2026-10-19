@@ -8,6 +8,7 @@ export type {
   ArkosGatewayEventConfig,
   ArkosGatewayHandler,
   ArkosGatewayPipe,
+  ArkosGatewayMiddleware,
   ArkosGatewayConnectionHandler,
   ArkosGatewayErrorHandler,
   ArkosGatewayAckFn,

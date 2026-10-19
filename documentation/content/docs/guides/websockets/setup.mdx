@@ -78,7 +78,25 @@ gateway.use((socket, next) => {
 gateway.use(adminGateway);
 ```
 
-A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits the parent's `authentication` and `rateLimit` unless it sets its own, and it inherits all of the parent's lifecycle hooks. It does **not** automatically inherit the parent's `.pipe()` middlewares — those are scoped to the Gateway that registered them.
+A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits the parent's `authentication` and `rateLimit` unless it sets its own, and it inherits all of the parent's lifecycle hooks.
+
+Connection middlewares also drill down, Express-style: for a socket connecting to a child namespace, the parent's `.use()` middlewares run first (outermost ancestor first), then the child's own `.use()` middlewares, then the child's authentication middleware:
+
+```ts
+gateway.use((socket, next) => {
+  console.log("parent saw", socket.id);
+  next();
+});
+
+gateway.use(adminGateway);
+adminGateway.use((socket, next) => {
+  console.log("child saw", socket.id);
+  next();
+});
+// connecting to /admin logs "parent saw" → "child saw" → then auth runs
+```
+
+`.pipe()` middlewares are different: they are event-level and scoped to the Gateway that registered them — a child does not inherit its parent's pipes.
 
 ## Attaching an event handler — `.on()`
 

@@ -336,6 +336,17 @@ export type ArkosGatewayPipe = (
   data: any,
 ) => void | Promise<void>;
 
+/**
+ * Connection-level middleware registered with `gateway.use()`.
+ * Same `(socket, next)` contract as Socket.io namespace middleware.
+ * Runs before the namespace's authentication middleware and is inherited
+ * by nested gateways.
+ */
+export type ArkosGatewayMiddleware = (
+  socket: ArkosSocket,
+  next: (err?: any) => void
+) => void | Promise<void>;
+
 export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
   /** The Socket.io event name to listen for. */
   event: string;

@@ -7,6 +7,7 @@ import {
   ArkosGatewayHookHandler,
   ArkosGatewayHookType,
   ArkosGatewayPipe,
+  ArkosGatewayMiddleware,
   ArkosGatewayConnectionHandler,
   ArkosSocket,
   ArkosGatewayRegisterOptions,
@@ -59,6 +60,7 @@ export class IArkosGateway {
   private config: ArkosGatewayConfig;
   private events: ArkosGatewayEventEntry[] = [];
   private pipes: ArkosGatewayPipe[] = [];
+  private middlewares: ArkosGatewayMiddleware[] = [];
   private gateways: IArkosGateway[] = [];
   private hooks: {
     type: ArkosGatewayHookType;
@@ -82,9 +84,9 @@ export class IArkosGateway {
 
   /**
    * Register a Socket.io connection-level middleware — runs before a socket
-   * is accepted into this gateway's namespace. Also accepts a child
-   * `ArkosGateway` which will inherit this gateway's name as prefix along
-   * with its auth, rateLimit, and pipes.
+   * is accepted into this gateway's namespace, and before authentication.
+   * Also accepts a child `ArkosGateway` which will inherit this gateway's
+   * name as prefix along with its auth, rateLimit, and pipes.
    *
    * @example
    * chatGateway.use((socket, next) => {
@@ -94,12 +96,14 @@ export class IArkosGateway {
    * // nested gateway
    * chatGateway.use(notificationsGateway)
    */
-  use(...middlewareOrGateway: Array<ArkosGatewayPipe | IArkosGateway>): this {
+  use(
+    ...middlewareOrGateway: Array<ArkosGatewayMiddleware | IArkosGateway>
+  ): this {
     for (const item of middlewareOrGateway) {
       if (item instanceof IArkosGateway) {
         this.gateways.push(item);
       } else if (typeof item === "function") {
-        this.pipes.push(item as ArkosGatewayPipe);
+        this.middlewares.push(item as ArkosGatewayMiddleware);
       } else {
         throw new Error(
           `Invalid value for gateway.use() — expected an ArkosGateway instance or a middleware function but received "${typeof item}".`,
@@ -297,6 +301,7 @@ export class IArkosGateway {
     }[] = [],
     inheritedPipes: ArkosGatewayPipe[] = [],
     options: ArkosGatewayRegisterOptions = {},
+    inheritedMiddlewares: ArkosGatewayMiddleware[] = [],
   ): void {
     options.store = options.store ?? defaultGatewayStore;
     const { store } = options;
@@ -322,6 +327,7 @@ export class IArkosGateway {
 
     const resolvedRateLimit = this.config.rateLimit ?? parentConfig?.rateLimit;
     const resolvedHooks = [...inheritedHooks, ...this.hooks];
+    const resolvedMiddlewares = [...inheritedMiddlewares, ...this.middlewares];
 
     const connectHandlers = resolvedHooks
       .filter((h) => h.type === "connection")
@@ -334,6 +340,10 @@ export class IArkosGateway {
     const errorHandlers = resolvedHooks
       .filter((h) => h.type === "error")
       .map((h) => h.handler as ArkosGatewayErrorHandler);
+
+    for (const middleware of resolvedMiddlewares) {
+      ns.use((socket, next) => middleware(socket as ArkosSocket, next));
+    }
 
     if (resolvedAuth && isAuthenticationEnabled()) {
       ns.use(async (socket: any, next) => {
@@ -661,6 +671,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
         resolvedHooks,
         inheritedPipes,
         options,
+        resolvedMiddlewares,
       );
     }
   }
