@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  style-to-js: 1.1.16
-
 importers:
 
   .:
