@@ -10,11 +10,10 @@ It shows the full connect → emit → receive loop:
 
 ## Run
 
-The local packages are linked, so build them first:
+`@arkosjs/svelte-websockets` is linked from `integrations/`, so build it first:
 
 ```bash
-cd ../../../integrations/websockets-client && pnpm install && pnpm build
-cd ../svelte-websockets && pnpm install && pnpm build
+cd ../../../integrations/svelte-websockets && pnpm install && pnpm build
 ```
 
 Then start the [backend](../backend) and run:

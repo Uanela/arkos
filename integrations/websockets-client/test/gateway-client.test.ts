@@ -19,7 +19,6 @@ afterEach(async () => {
 async function startServer() {
   const http = createServer();
   const io = new Server(http);
-  // socket.io rejects namespaces that were never created
   io.of("/chat");
   io.of("/orders");
   await new Promise<void>((resolve) => http.listen(0, resolve));
@@ -77,7 +76,6 @@ describe("GatewayClient status", () => {
     const first = createWebsocketClient(manager).gateway("/chat");
     await connected(first);
 
-    // A second client on the same Manager gets the same (connected) socket
     const second = createWebsocketClient(manager).gateway("/chat");
 
     expect(second.status).toBe("connected");
@@ -95,7 +93,6 @@ describe("GatewayClient status", () => {
     await vi.waitFor(() => expect(statuses.at(-1)).toBe("disconnected"), {
       timeout: 2000,
     });
-    // No reconnecting → disconnected → reconnecting flapping per attempt
     expect(statuses).toEqual(["disconnected", "reconnecting", "disconnected"]);
   });
 
@@ -137,7 +134,6 @@ describe("GatewayClient status", () => {
     const orderStatuses = recordStatuses(orders);
     const chatStatuses = recordStatuses(chat);
 
-    // Drop the shared engine connection: the manager reconnects /chat only
     for (const socket of server.io.of("/chat").sockets.values()) socket.conn.close();
     await vi.waitFor(() =>
       expect(chatStatuses).toEqual(["disconnected", "reconnecting", "connected"])

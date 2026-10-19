@@ -5,21 +5,10 @@ import {
 } from "@arkosjs/websockets-client";
 import type { SocketOptions } from "socket.io-client";
 
-/** The socket.io `Manager` accepted by `createWebsocketClient`. */
 export type ArkosManager = Parameters<typeof createWebsocketClient>[0];
-
-/** A plain value, or a getter so the value can be read reactively. */
-export type MaybeGetter<T> = T | (() => T);
 
 const KEY = Symbol("arkos-websocket-client");
 
-/**
- * Reactive holder for the current client. When the provider receives a new
- * `manager`, `current` is swapped and every `useGateway` beneath it rebinds
- * to the new client without remounting the tree.
- *
- * @internal
- */
 export class ArkosClientRef {
   current = $state.raw() as WebsocketClient;
 
@@ -28,35 +17,10 @@ export class ArkosClientRef {
   }
 }
 
-export function toGetter<T>(value: MaybeGetter<T>): () => T {
-  return typeof value === "function" ? (value as () => T) : () => value;
-}
-
-/**
- * Creates a `WebsocketClient`, provides it to all descendants via context
- * and destroys it when the calling component is destroyed.
- *
- * Must be called during component initialisation. `<ArkosProvider>` is a
- * thin wrapper around this function — call it directly if you prefer to
- * set up the client in your root layout script.
- *
- * Pass `manager` as a getter (`() => manager`) to have the client recreated
- * whenever the manager changes (e.g. a new auth token). `options` are read
- * once; to change socket options, pass a new `Manager`.
- *
- * @example
- * <script>
- *   import { Manager } from "socket.io-client";
- *   import { initArkosClient } from "@arkosjs/svelte-websockets";
- *
- *   initArkosClient(new Manager("http://localhost:8000"));
- * </script>
- */
-export function initArkosClient(
-  manager: MaybeGetter<ArkosManager>,
+export function setArkosClient(
+  getManager: () => ArkosManager,
   options?: Partial<SocketOptions>
-): WebsocketClient {
-  const getManager = toGetter(manager);
+): void {
   let currentManager = untrack(getManager);
   const ref = new ArkosClientRef(
     createWebsocketClient(currentManager, options)
@@ -77,30 +41,10 @@ export function initArkosClient(
   });
 
   onDestroy(() => ref.current.destroy());
-
-  return ref.current;
 }
 
-/** @internal */
 export function getArkosClientRef(): ArkosClientRef {
   const ref = getContext<ArkosClientRef | undefined>(KEY);
-  if (!ref) {
-    throw new Error(
-      "No Arkos websocket client found. Wrap your app in <ArkosProvider> or call initArkosClient() in a parent component."
-    );
-  }
+  if (!ref) throw new Error("useGateway() must be used within <ArkosProvider>");
   return ref;
-}
-
-/**
- * Returns the `WebsocketClient` provided by the nearest `<ArkosProvider>`.
- * Must be called during component initialisation.
- * Throws if used outside a provider.
- *
- * @example
- * const client = getArkosClient();
- * const notifications = client.gateway("/notifications");
- */
-export function getArkosClient(): WebsocketClient {
-  return getArkosClientRef().current;
 }

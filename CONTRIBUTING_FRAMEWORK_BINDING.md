@@ -103,7 +103,7 @@ Testing the AI-drafted version that used to be here against a real Svelte 5 app 
 
 - **`<slot />`** is deprecated in Svelte 5 runes components. The provider uses `{@render children?.()}`.
 - **Stores only.** `chat.status` was a store object, so it couldn't be read directly in runes code. Handles now expose rune-backed getters (`chat.status`) *and* implement the store contract (`$chat.status`).
-- **No namespace re-subscription.** `useGateway` now accepts a getter (`() => namespace`) and moves status, user, `on` listeners and emitters to the new gateway.
+- **No namespace re-subscription.** `useGateway` now accepts a getter (`() => namespace`) and moves status, `on` listeners and emitters to the new gateway.
 - **`on()` relied on `onDestroy`**, so it threw when called outside component init (e.g. in an `$effect`). Listeners are now tracked per handle and cleaned up once.
 - **Emitting inside an `$effect` looped forever:** the effect read `loading` and re-ran when the ack resolved. Emits are now `untrack`ed.
 - **Concurrent ack emits:** `loading` flipped to `false` when the *first* ack resolved. It now stays `true` until every pending ack settles, and `reset()` ignores acks already in flight.

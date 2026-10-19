@@ -85,7 +85,6 @@ The provider creates and owns the `WebsocketClient`, and destroys it when the pr
 </script>
 
 <p>Status: {chat.status}</p>
-<p>User: {chat.user?.name ?? "anonymous"}</p>
 
 <button
   onclick={() => sendMessage.emit({ text: "hello" }, { ack: true })}
@@ -106,7 +105,6 @@ Prefer stores? The same handles work with `$` syntax:
 ```svelte
 <div>
   Status: {$chat.status}
-  User: {$chat.user?.name}
   {#if $sendMessage.loading} Sending... {/if}
 </div>
 ```
@@ -125,31 +123,7 @@ Provides the `WebsocketClient` to the component tree. Mount it once, near the ro
 | `options`  | `Partial<SocketOptions>`            | Default socket options for every namespace (read once)           |
 | `children` | `Snippet`                           | Your component tree                                              |
 
-**Changing `manager`** (e.g. after login with a new token) destroys the old client and creates a new one. Every `useGateway` below rebinds its status, user, listeners and emitters to the new client, and **children stay mounted**, so component state is kept.
-
----
-
-### `initArkosClient(manager, options?)`
-
-The function behind `<ArkosProvider>`, for when you'd rather set up the client in a script than wrap markup. Call it during component initialisation:
-
-```svelte
-<script>
-  import { initArkosClient } from "@arkosjs/svelte-websockets";
-
-  initArkosClient(new Manager("http://localhost:8000"));
-  // or reactive: initArkosClient(() => manager)
-</script>
-```
-
-### `getArkosClient()`
-
-Returns the nearest `WebsocketClient`. Throws if there is no provider above.
-
-```ts
-const client = getArkosClient();
-const notifications = client.gateway("/notifications");
-```
+**Changing `manager`** (e.g. after login with a new token) destroys the old client and creates a new one. Every `useGateway` below rebinds its status, listeners and emitters to the new client, and **children stay mounted**, so component state is kept.
 
 ---
 
@@ -157,7 +131,7 @@ const notifications = client.gateway("/notifications");
 
 Returns a reactive handle for a namespace. Call it during component initialisation, inside a provider. The namespace socket is created lazily and shared: two components calling `useGateway("/chat")` use the same connection.
 
-`namespace` may be a string or a **getter**. With a getter, changing the namespace re-subscribes everything (status, user, `on` listeners and emitters) to the new gateway:
+`namespace` may be a string or a **getter**. With a getter, changing the namespace re-subscribes everything (status, `on` listeners and emitters) to the new gateway:
 
 ```svelte
 <script lang="ts">
@@ -214,10 +188,9 @@ It is safe to call `emit` inside an `$effect`: the emitter's own state is not tr
 | Property         | Type                                                              |
 | ---------------- | ----------------------------------------------------------------- |
 | `chat.status`    | `"connected" \| "connecting" \| "reconnecting" \| "disconnected"` |
-| `chat.user`      | user object or `null`, populated when the server emits `"authenticated"` |
 | `chat.namespace` | the namespace currently in use                                    |
 | `chat.raw`       | the underlying `GatewayClient` (escape hatch)                     |
-| `$chat`          | store value `{ status, user }`                                    |
+| `$chat`          | store value `{ status }`                                          |
 
 ---
 
@@ -296,7 +269,7 @@ pnpm typecheck   # svelte-check
 pnpm build       # svelte-package → dist/
 ```
 
-The tests cover provider cleanup, listener cleanup on unmount, re-subscription on namespace and manager changes, ack `loading`/`error` state, status across disconnect and reconnect, `user` on `"authenticated"`, runes mode, store syntax and legacy components.
+The tests cover provider cleanup, listener cleanup on unmount, re-subscription on namespace and manager changes, ack `loading`/`error` state, status across disconnect and reconnect, runes mode, store syntax and legacy components.
 
 ---
 

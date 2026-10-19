@@ -4,9 +4,7 @@ import { defineConfig } from "vitest/config";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { svelteTesting } from "@testing-library/svelte/vite";
 
-// Tests resolve with the "browser" condition (for Svelte's client build),
-// which maps `ws` to a stub that throws. socket.io-client runs in Node here,
-// so point `ws` at its real Node entry.
+// The "browser" resolve condition maps `ws` to a stub; use the Node build
 const wsRoot = dirname(createRequire(import.meta.url).resolve("ws/package.json"));
 
 export default defineConfig({
@@ -19,7 +17,6 @@ export default defineConfig({
     include: ["test/**/*.test.ts"],
     globalSetup: ["test/global-setup.ts"],
     testTimeout: 10_000,
-    // Process socket.io-client through Vite so the `ws` alias applies
     server: { deps: { inline: ["socket.io-client", "engine.io-client"] } },
   },
 });

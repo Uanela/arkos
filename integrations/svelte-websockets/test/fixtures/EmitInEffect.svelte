@@ -4,8 +4,6 @@
   const chat = useGateway("/chat");
   const join = chat.useEmit<{ text: string }>("send_message", { ack: true });
 
-  // Emitting from an effect must not subscribe the effect to the emitter's
-  // own loading state, otherwise the ack would re-trigger the emit.
   $effect(() => {
     if (chat.status === "connected") join.emit({ text: "joined-from-effect" });
   });

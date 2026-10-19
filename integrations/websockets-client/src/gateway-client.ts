@@ -26,11 +26,7 @@ export class GatewayClient {
   public status: GatewayStatus;
   public user: any = null;
 
-  // Listeners registered on the shared Manager (not the socket), kept so
-  // destroy() can remove them — socket.removeAllListeners() doesn't
   private onReconnectAttempt = () => {
-    // The Manager retries every active namespace; skip sockets that were
-    // disconnected on purpose and won't come back
     if (this.socket.active) this.setStatus("reconnecting");
   };
   private onReconnectFailed = () => this.setStatus("disconnected");
@@ -50,9 +46,6 @@ export class GatewayClient {
     this.socket.on("connect", () => this.setStatus("connected"));
     this.socket.on("disconnect", () => this.setStatus("disconnected"));
     this.socket.on("connect_error", () => {
-      // While active the Manager keeps retrying, so stay "connecting" /
-      // "reconnecting" instead of flapping to "disconnected" on every attempt.
-      // Inactive means the server refused us (e.g. auth middleware).
       if (!this.socket.active) this.setStatus("disconnected");
     });
     this.socket.io.on("reconnect_attempt", this.onReconnectAttempt);
@@ -111,13 +104,9 @@ export class GatewayClient {
     if (!this.boundEvents.has(event)) {
       this.boundEvents.add(event);
       this.socket.on(event, (payload: any) => {
-        // Only the _meta.mid envelope identifies a delivery. Domain fields
-        // like `id` don't: two updates to the same entity share one.
         const mid = payload?._meta?.mid;
         if (mid && this.dedup.checkAndSet(event, mid)) return;
 
-        // Strip the envelope from object payloads; pass anything else
-        // (arrays, primitives, null) through untouched
         let data = payload;
         if (payload && typeof payload === "object" && "_meta" in payload) {
           const { _meta, ...rest } = payload;

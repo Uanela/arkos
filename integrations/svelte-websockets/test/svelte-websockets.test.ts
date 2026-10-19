@@ -28,7 +28,6 @@ function createManager() {
   return manager;
 }
 
-/** Number of handlers the core GatewayClient holds for an event. */
 function handlerCount(gateway: GatewayClient, event: string): number {
   return (gateway as any).handlers.get(event)?.size ?? 0;
 }
@@ -97,7 +96,6 @@ describe("ArkosProvider", () => {
 
     await server.broadcast("/chat", "receive_message", { text: "after" });
     await screen.findByText("after");
-    // Component state survived the swap
     expect(screen.getByText("before")).toBeTruthy();
     expect(handlerCount(firstGateway, "receive_message")).toBe(0);
   });
@@ -110,16 +108,6 @@ describe("useGateway", () => {
     expect(screen.getByTestId("label").textContent).toBe("/chat:connected");
   });
 
-  it("populates user when the server emits 'authenticated'", async () => {
-    renderChat();
-    await connected();
-    expect(screen.getByTestId("user").textContent).toBe("anonymous");
-
-    await server.broadcast("/chat", "authenticated", { user: { name: "ada" } });
-
-    await waitFor(() => expect(screen.getByTestId("user").textContent).toBe("ada"));
-  });
-
   it("tracks disconnect → reconnecting → connected", async () => {
     const { api } = renderChat();
     await connected();
@@ -127,7 +115,6 @@ describe("useGateway", () => {
     const statuses: string[] = [];
     const unsubscribe = api().chat.subscribe((s: GatewayState) => statuses.push(s.status));
 
-    // Drop the underlying transport so the manager reconnects
     await server.drop("/chat");
 
     await waitFor(() => {
@@ -136,7 +123,7 @@ describe("useGateway", () => {
     });
     unsubscribe();
 
-    expect(statuses[0]).toBe("connected"); // immediate value on subscribe
+    expect(statuses[0]).toBe("connected");
     expect(statuses).toContain("disconnected");
     expect(statuses).toContain("reconnecting");
     expect(statuses.indexOf("disconnected")).toBeLessThan(statuses.indexOf("reconnecting"));
@@ -191,7 +178,7 @@ describe("useGateway", () => {
     await connected();
     const handler = vi.fn();
     const off = api().chat.on("receive_message", handler);
-    api().chat.on("receive_message", handler); // same fn twice → independent
+    api().chat.on("receive_message", handler);
 
     off();
     await server.broadcast("/chat", "receive_message", { text: "x" });
@@ -204,8 +191,6 @@ describe("useGateway", () => {
     const onMessage = vi.fn();
     const { rerender, api } = renderChat({ onMessage, namespace: "/chat" });
     await connected();
-    await server.broadcast("/chat", "authenticated", { user: { name: "ada" } });
-    await waitFor(() => expect(screen.getByTestId("user").textContent).toBe("ada"));
     const chatGateway = api().chat.raw;
 
     await rerender({ childProps: { onMessage, namespace: "/orders" } });
@@ -217,15 +202,12 @@ describe("useGateway", () => {
     expect(api().chat.raw).not.toBe(chatGateway);
     expect(handlerCount(chatGateway, "receive_message")).toBe(0);
     expect(handlerCount(api().chat.raw, "receive_message")).toBe(1);
-    // user/status come from the new gateway
-    expect(screen.getByTestId("user").textContent).toBe("anonymous");
 
     await server.broadcast("/chat", "receive_message", { text: "from-chat" });
     await server.broadcast("/orders", "receive_message", { text: "from-orders" });
     await screen.findByText("from-orders");
     expect(screen.queryByText("from-chat")).toBeNull();
 
-    // Emitters follow the namespace too
     await api().send.emit({ text: "to-orders" }, { ack: true });
     expect((await server.received()).at(-1)).toMatchObject({ namespace: "/orders", data: { text: "to-orders" } });
   });
@@ -330,15 +312,13 @@ describe("useEmit", () => {
 });
 
 describe("store syntax", () => {
-  it("supports $chat.status / $chat.user / $sendMessage.loading in runes mode", async () => {
+  it("supports $chat.status / $sendMessage.loading in runes mode", async () => {
     const manager = createManager();
     render(Harness, { props: { manager, child: ChatStore } });
 
     await waitFor(() =>
       expect(screen.getByTestId("status").textContent).toBe("Status: connected")
     );
-    await server.broadcast("/chat", "authenticated", { user: { name: "grace" } });
-    await waitFor(() => expect(screen.getByTestId("user").textContent).toBe("User: grace"));
 
     await fireEvent.click(screen.getByText("send"));
     expect(screen.getByTestId("loading").textContent).toBe("Sending...");

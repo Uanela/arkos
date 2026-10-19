@@ -17,14 +17,6 @@ export interface Received {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * Minimal socket.io server standing in for an ArkosGateway:
- * - /chat, /orders: send_message (ack, optional delay / failure / no ack)
- * - /control: lets tests drive the server (broadcast, drop, kick, inspect)
- *
- * Started from vitest globalSetup so it runs in plain Node — test workers
- * use the "browser" resolve condition, which breaks the `ws` server.
- */
 export async function startServer() {
   const http = createServer();
   const io = new Server(http, { cors: { origin: "*" } });
@@ -47,12 +39,10 @@ export async function startServer() {
       io.of(namespace).emit(event, data);
       ack();
     });
-    // Close the engine.io transport: the client manager will reconnect
     socket.on("drop", ({ namespace }, ack) => {
       for (const s of io.of(namespace).sockets.values()) s.conn.close();
       ack();
     });
-    // Server-side disconnect: the client will NOT reconnect
     socket.on("kick", ({ namespace }, ack) => {
       for (const s of io.of(namespace).sockets.values()) s.disconnect(true);
       ack();

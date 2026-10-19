@@ -12,11 +12,6 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-    "noEmit": true,
-    // The linked core package has its own node_modules; share one copy of
-    // socket.io-client types so Manager instances are assignable across both
-    "paths": {
-      "socket.io-client": ["./node_modules/socket.io-client"]
-    }
+    "noEmit": true
   }
 }

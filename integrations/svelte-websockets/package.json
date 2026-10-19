@@ -42,7 +42,7 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@arkosjs/websockets-client": "link:../websockets-client",
+    "@arkosjs/websockets-client": "0.2.0",
     "@sveltejs/package": "^3.0.1",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@testing-library/svelte": "^5.4.2",

@@ -7,7 +7,6 @@ import type {
 } from "@arkosjs/websockets-client";
 import { StoreBridge } from "./store-bridge.js";
 
-/** Snapshot pushed to `$emitter` store subscribers. */
 export interface EmitterState {
   loading: boolean;
   error: string | null;
@@ -18,10 +17,7 @@ export interface SocketEmitter<
   TData extends Record<string, any>,
   TResponse = any,
 > extends Readable<EmitterState> {
-  /**
-   * Emit the event with optional per-call options (merged over the defaults).
-   * Returns void for fire-and-forget, Promise<ArkosEmitResult> when ack: true.
-   */
+  /** Returns void for fire-and-forget, Promise<ArkosEmitResult> when ack: true. */
   emit(data: TData): void;
   emit(
     data: TData,
@@ -32,25 +28,19 @@ export interface SocketEmitter<
     options?: ArkosEmitOptions
   ): void | Promise<ArkosEmitResult<TResponse>>;
 
-  /** True while at least one ack emit is awaiting a response. Reactive. */
+  /** True while at least one ack emit is awaiting a response. */
   readonly loading: boolean;
 
-  /** Last error message, or null if the last emit succeeded. Reactive. */
+  /** Last error message, or null if the last emit succeeded. */
   readonly error: string | null;
 
-  /** Timestamp of the last emit call, or null if never emitted. Reactive. */
+  /** Timestamp of the last emit call, or null if never emitted. */
   readonly lastEmittedAt: number | null;
 
-  /** Clears error and loading. Acks still in flight no longer affect state. */
+  /** Clears error and loading state. */
   reset(): void;
 }
 
-/**
- * Creates an emitter bound to whatever gateway `getGateway` returns at emit
- * time, so it keeps working after the namespace changes.
- *
- * @internal — use via `chat.useEmit()` from useGateway
- */
 export function createEmitter<
   TData extends Record<string, any>,
   TResponse = any,
@@ -62,7 +52,6 @@ export function createEmitter<
   let pending = $state(0);
   let error = $state<string | null>(null);
   let lastEmittedAt = $state<number | null>(null);
-  // Bumped by reset() so acks from before the reset don't touch state
   let generation = 0;
 
   const store = new StoreBridge<EmitterState>(() => ({
@@ -109,8 +98,6 @@ export function createEmitter<
   }
 
   return {
-    // untrack: emitting from inside an $effect must not make the effect
-    // depend on (and re-run because of) the emitter's own state
     emit: ((data: TData, options?: ArkosEmitOptions) =>
       untrack(() => send(data, options))) as SocketEmitter<
       TData,

@@ -10,12 +10,7 @@
     "isolatedModules": true,
     "strict": true,
     "noEmit": true,
-    "skipLibCheck": true,
-    // The linked packages carry their own node_modules; share one copy of
-    // socket.io-client types (not needed when installed from npm)
-    "paths": {
-      "socket.io-client": ["./node_modules/socket.io-client"]
-    }
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"]
 }

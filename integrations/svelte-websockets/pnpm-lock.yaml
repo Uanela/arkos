@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@arkosjs/websockets-client':
-        specifier: link:../websockets-client
-        version: link:../websockets-client
+        specifier: 0.2.0
+        version: 0.2.0(socket.io-client@4.8.4)
       '@sveltejs/package':
         specifier: ^3.0.1
         version: 3.0.1(svelte@5.57.2)(typescript@6.0.3)
@@ -52,6 +52,11 @@ importers:
         version: 8.21.3
 
 packages:
+
+  '@arkosjs/websockets-client@0.2.0':
+    resolution: {integrity: sha512-ZSJiV0+BT15nft7zzyvsOuSLwXgBLytQQ8v5sOAGsW3l0PyoI9kTq4PXZ0uuK+UrFOm9+U67tUVdUIMbXLltsw==}
+    peerDependencies:
+      socket.io-client: ^4.7.0
 
   '@asamuzakjp/css-color@7.1.6':
     resolution: {integrity: sha512-jZJUZX0mR6JqnjQGb79yTYbR5WXmACmcLoFSgZk+7W+0qMJ8jWGRp9ncYvE1ihwL3dwbmfeCe6/O0rRwWTko4g==}
@@ -906,6 +911,10 @@ packages:
     resolution: {integrity: sha512-msJxIvYDYcoNL+PJsu+7qmpDWsYmAxTY+2TNYXXF0hzBzBk0BMecOqDOG/EckUoKCuKwObfbugIl8QpqHDXeFA==}
 
 snapshots:
+
+  '@arkosjs/websockets-client@0.2.0(socket.io-client@4.8.4)':
+    dependencies:
+      socket.io-client: 4.8.4
 
   '@asamuzakjp/css-color@7.1.6':
     dependencies:

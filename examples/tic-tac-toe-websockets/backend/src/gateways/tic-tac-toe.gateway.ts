@@ -211,8 +211,6 @@ tictactoeGateway.on({ event: "make_move", ack: true }, (socket, data, ack) => {
       winnerUsername: winnerPlayer?.username ?? null,
     };
 
-    // socket.to() excludes the sender, so the player who made the final
-    // move needs its own emit
     socket.to(roomId).emit("game_over", gameOverPayload);
     socket.emit("game_over", gameOverPayload);
 

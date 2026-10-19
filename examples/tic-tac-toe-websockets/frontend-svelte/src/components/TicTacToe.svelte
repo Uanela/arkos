@@ -87,7 +87,7 @@
     screen = "game";
   }
 
-  // ── Listeners (cleaned up automatically when the component is destroyed) ──
+  // ── Listeners ──
   game.on<GameStartData>("game_start", handleGameStart);
 
   game.on<MoveMadeData>("move_made", (data) => {
@@ -165,7 +165,6 @@
   }
 
   function handleCancelWait() {
-    // Reconnecting drops us from the server's waiting slot
     game.raw.rawSocket.disconnect();
     game.raw.rawSocket.connect();
     screen = "join";
@@ -264,7 +263,6 @@
 </div>
 
 <style>
-  /* Cells are buttons for keyboard/a11y support; drop native button styling */
   .cell {
     font-family: inherit;
     padding: 0;

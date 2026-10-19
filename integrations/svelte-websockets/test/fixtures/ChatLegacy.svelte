@@ -1,5 +1,4 @@
 <script lang="ts">
-  // Legacy (non-runes) component: only store syntax is used
   import { useGateway } from "../../src/index.js";
 
   export let index = 0;

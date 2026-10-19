@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Component } from "svelte";
-  import { ArkosProvider, type ArkosManager } from "../../src/index.js";
+  import type { Manager } from "socket.io-client";
+  import { ArkosProvider } from "../../src/index.js";
 
   interface Props {
-    manager: ArkosManager;
+    manager: Manager;
     child: Component<any>;
     childProps?: Record<string, unknown>;
     count?: number;
