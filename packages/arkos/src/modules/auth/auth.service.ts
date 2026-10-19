@@ -57,6 +57,10 @@ import { authenticationDocsLinks } from "./utils/docs-links";
 import authHookManager from "./utils/auth-hooks-manager";
 import { ArkosSocket } from "../../components/arkos-gateway/types";
 import {
+  resolveRequestToken,
+  resolveSocketToken,
+} from "./utils/token-extraction";
+import {
   BadRequestError,
   UnauthorizedError,
 } from "../error-handler/utils/errors";
@@ -738,30 +742,23 @@ export class AuthService {
     req: ArkosRequest,
     cookie: "arkos_access_token" = "arkos_access_token",
   ) {
-    let token: string | null = null;
-
-    if (
-      req?.headers?.authorization &&
-      req?.headers?.authorization.startsWith("Bearer") &&
-      req?.headers?.authorization.split?.(" ")?.[1]
-    )
-      token = req?.headers?.authorization.split(" ")[1];
-
-    if (
-      !token &&
-      req?.cookies?.arkos_access_token !== "no-token" &&
-      req.cookies
-    )
-      token = req?.cookies?.[cookie];
-
-    return token;
+    return resolveRequestToken({
+      authorization: req?.headers?.authorization,
+      cookies: req?.cookies,
+      cookieName: cookie,
+    });
   }
 
   private extractSocketToken(socket: ArkosSocket, key: "token" = "token") {
-    return (
-      socket.handshake.auth?.[key] ||
-      socket.handshake.headers?.authorization?.replace("Bearer ", "")
-    );
+    const requestCookie = (socket.request as any)?.headers?.cookie;
+
+    return resolveSocketToken({
+      auth: socket.handshake?.auth,
+      key,
+      headers: socket.handshake?.headers,
+      cookies: socket.handshake?.cookies,
+      cookieHeader: requestCookie,
+    });
   }
 
   async validateDecodedUser(

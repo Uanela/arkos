@@ -31,6 +31,16 @@ export interface ArkosSocket<
   SocketLocals extends Record<string, any> = Record<string, any>,
 > extends Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData> {
   /**
+   * The engine.io handshake, enriched with the parsed `Cookie` header.
+   *
+   * Arkos parses the raw header once per connection, so handlers can read
+   * cookies without installing `io.engine.use(cookieParser())` themselves.
+   */
+  handshake: Socket["handshake"] & {
+    cookies?: Record<string, string>;
+  };
+
+  /**
    * Populated by Arkos after successful authentication on connection.
    * Available in all event handlers when `authentication: true` on the gateway.
    */

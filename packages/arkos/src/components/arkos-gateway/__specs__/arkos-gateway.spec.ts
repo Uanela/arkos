@@ -686,6 +686,105 @@ describe("IArkosGateway", () => {
         expect(next).toHaveBeenCalledWith();
       });
 
+      it("should authenticate a cookie-only connection and populate currentUser", async () => {
+        const { mockIo, mockNs } = createMockIo();
+        const gateway = new IArkosGateway({
+          name: "/chat",
+          authentication: true,
+        });
+        const mockSocket = createMockSocket({
+          handshake: {
+            auth: {},
+            headers: {
+              cookie: "theme=dark; arkos_access_token=valid-token",
+            },
+          },
+        });
+        const next = jest.fn();
+
+        (authService.getAuthenticatedUser as jest.Mock).mockImplementation(
+          async (socket: any) =>
+            socket.handshake.cookies?.arkos_access_token === "valid-token"
+              ? { id: "user-1" }
+              : null,
+        );
+
+        (gateway as any)._register(mockIo, undefined, [], [], {});
+        const middlewareFn = mockNs.use.mock.calls[0][0];
+        await middlewareFn(mockSocket, next);
+
+        expect(mockSocket.handshake.cookies).toEqual({
+          theme: "dark",
+          arkos_access_token: "valid-token",
+        });
+        expect(authService.getAuthenticatedUser).toHaveBeenCalledWith(
+          mockSocket,
+        );
+        expect(next).toHaveBeenCalledWith();
+        expect(mockSocket.currentUser).toEqual({ id: "user-1" });
+      });
+
+      it("should reject a cookie-only connection with an invalid token", async () => {
+        const { mockIo, mockNs } = createMockIo();
+        const gateway = new IArkosGateway({
+          name: "/chat",
+          authentication: true,
+        });
+        const mockSocket = createMockSocket({
+          handshake: {
+            auth: {},
+            headers: { cookie: "arkos_access_token=invalid-token" },
+          },
+        });
+        const next = jest.fn();
+
+        (authService.getAuthenticatedUser as jest.Mock).mockResolvedValue(null);
+
+        (gateway as any)._register(mockIo, undefined, [], [], {});
+        const middlewareFn = mockNs.use.mock.calls[0][0];
+        await middlewareFn(mockSocket, next);
+
+        expect(mockSocket.handshake.cookies).toEqual({
+          arkos_access_token: "invalid-token",
+        });
+        expect(next).not.toHaveBeenCalledWith();
+        expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+          expect.any(Error),
+          mockSocket,
+          [],
+          {
+            startTime: expect.any(Number),
+            namespace: "/chat",
+            event: "authentication",
+          },
+        );
+      });
+
+      it("should reject a cookie-only connection with a missing token", async () => {
+        const { mockIo, mockNs } = createMockIo();
+        const gateway = new IArkosGateway({
+          name: "/chat",
+          authentication: true,
+        });
+        const mockSocket = createMockSocket({
+          handshake: {
+            auth: {},
+            headers: { cookie: "theme=dark" },
+          },
+        });
+        const next = jest.fn();
+
+        (authService.getAuthenticatedUser as jest.Mock).mockResolvedValue(null);
+
+        (gateway as any)._register(mockIo, undefined, [], [], {});
+        const middlewareFn = mockNs.use.mock.calls[0][0];
+        await middlewareFn(mockSocket, next);
+
+        expect(mockSocket.handshake.cookies).toEqual({ theme: "dark" });
+        expect(next).not.toHaveBeenCalledWith();
+        expect(handleArkosGatewayErrors).toHaveBeenCalled();
+      });
+
       it("auth middleware should call next() with error when user not found", async () => {
         const { mockIo, mockNs } = createMockIo();
         const gateway = new IArkosGateway({

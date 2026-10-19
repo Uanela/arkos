@@ -44,6 +44,16 @@ import {
   BadRequestError,
   TooManyRequestsError,
 } from "../../modules/error-handler/utils/errors";
+import { parseCookieHeader } from "../../modules/auth/utils/token-extraction";
+
+function parseHandshakeCookies(socket: ArkosSocket): void {
+  if (!socket.handshake || socket.handshake.cookies) return;
+
+  const rawCookie =
+    socket.handshake.headers?.cookie ?? socket.request?.headers?.cookie;
+
+  socket.handshake.cookies = parseCookieHeader(rawCookie);
+}
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -328,6 +338,7 @@ export class IArkosGateway {
     if (resolvedAuth && isAuthenticationEnabled()) {
       ns.use(async (socket: any, next) => {
         socket = socket as ArkosSocket;
+        parseHandshakeCookies(socket);
         const startTime = new Date().getTime();
         try {
           await authHookManager.runAuthenticate(
@@ -366,6 +377,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
 
     ns.on("connection", async (s) => {
       const socket = s as ArkosSocket;
+      parseHandshakeCookies(socket);
       socket.locals = {};
 
       socket._arkos = { store, gatewayConfig: localConfig };
