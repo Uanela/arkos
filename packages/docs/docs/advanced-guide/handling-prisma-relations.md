@@ -186,9 +186,16 @@ The utility `handleRelationFieldsInBody` function examines the structure of each
    - Note: Can use any @unique field with `"apiAction": "Delete"`.
 
 6. **Disconnect Operation**
+
    - Input: `{ "fieldName": { "id": 5, "apiAction": "disconnect" } }`
    - Result: `{ fieldName: { `disconnect`: { where: { id: 5 } } } }`
    - Note: Can use any @unique field with `"apiAction": "disconnect"`.
+
+7. **ConnectOrCreate Operation**
+
+   - Input: `{ "fieldName": { "email": "user@example.com", "name": "John", "apiAction": "connectOrCreate" } }`
+   - Result: `{ fieldName: { connectOrCreate: { where: { email: "user@example.com" }, create: { email: "user@example.com", name: "John" } } } }`
+   - Note: Requires at least one @unique field. Automatically separates unique fields for the where clause.
 
 :::warning important
 Bear in mind that to connect you can use any field that is @unique under your model schema or otherwise **Arkos** will try to create by default.
@@ -308,10 +315,77 @@ You can include an `apiAction` property to explicitly specify the operation:
 }
 ```
 
+### Connecting or Creating Relations
+
+When you want to connect to an existing entity or create it if it doesn't exist, use `connectOrCreate`:
+
+```json
+// Input JSON
+{
+  "title": "New Blog Post",
+  "author": {
+    "email": "author@example.com",
+    "name": "John Doe",
+    "apiAction": "connectOrCreate"
+  },
+  "tags": [
+    {
+      "name": "Technology",
+      "description": "Tech-related content",
+      "apiAction": "connectOrCreate"
+    },
+    {
+      "name": "Programming",
+      "description": "Code and development",
+      "apiAction": "connectOrCreate"
+    }
+  ]
+}
+
+// Transformed for Prisma
+{
+  "title": "New Blog Post",
+  "author": {
+    "connectOrCreate": {
+      "where": { "email": "author@example.com" },
+      "create": {
+        "email": "author@example.com",
+        "name": "John Doe"
+      }
+    }
+  },
+  "tags": {
+    "connectOrCreate": [
+      {
+        "where": { "name": "Technology" },
+        "create": {
+          "name": "Technology",
+          "description": "Tech-related content"
+        }
+      },
+      {
+        "where": { "name": "Programming" },
+        "create": {
+          "name": "Programming",
+          "description": "Code and development"
+        }
+      }
+    ]
+  }
+}
+```
+
+:::tip
+With `connectOrCreate`, Arkos automatically identifies which fields are unique (defined with `@unique` or `@@unique` in your Prisma schema) and uses them for the `where` clause. All fields are included in the `create` clause.
+:::
+
+```
+
 Valid `apiAction` values:
 
 - `"create"`: Force create operation
 - `"connect"`: Force connect operation even with additional fields
+- `"connectOrCreate"`: Connect if exists, otherwise create (requires at least one unique field)
 - `"update"`: Explicitly mark for update
 - `"delete"`: Remove relation (uses `deleteMany` for arrays automatically)
 - `"disconnect"`: Disconnect without deleting

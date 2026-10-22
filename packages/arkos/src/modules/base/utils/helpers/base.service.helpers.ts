@@ -114,6 +114,7 @@ export function handleRelationFieldsInBody(
 
     const createData: any[] = [];
     const connectData: any[] = [];
+    const connectOrCreateData: any[] = [];
     const updateData: any[] = [];
     const disconnectData: any[] = [];
     const deleteManyIds: any[] = [];
@@ -129,6 +130,48 @@ export function handleRelationFieldsInBody(
         deleteManyIds.push(bodyField.id);
       } else if (apiAction === "disconnect") {
         disconnectData.push({ id: bodyField.id });
+      } else if (apiAction === "connectOrCreate") {
+        // Handle connectOrCreate: separate unique fields for where clause,
+        // include all fields in create clause
+        const { apiAction: _, ...dataWithoutApiAction } = bodyField;
+        const whereClause: Record<string, any> = {};
+        const createClause: Record<string, any> = {};
+
+        let nestedRelations = getGroupedModelReations(field.type);
+
+        // Identify unique fields for the where clause by checking against schema
+        for (const [key, value] of Object.entries(dataWithoutApiAction)) {
+          if (canBeUsedToConnect(field.type, { [key]: value })) {
+            whereClause[key] = value;
+          }
+          createClause[key] = value;
+        }
+
+        if (Object.keys(whereClause).length === 0) {
+          throw new AppError(
+            "connectOrCreate requires at least one unique field to be used in the where clause",
+            400,
+            "NoUniqueFieldForConnectOrCreate",
+            { data: bodyField }
+          );
+        }
+
+        // Process nested relations in the create clause
+        let finalCreateClause = createClause;
+        if (nestedRelations?.singular || nestedRelations?.list) {
+          finalCreateClause = handleRelationFieldsInBody(
+            createClause,
+            nestedRelations,
+            ignoreActions,
+            true,
+            "create"
+          );
+        }
+
+        connectOrCreateData.push({
+          where: whereClause,
+          create: finalCreateClause,
+        });
       } else if (
         bodyField?.apiAction !== "update" &&
         canBeUsedToConnect(field.type, bodyField)
@@ -213,6 +256,9 @@ export function handleRelationFieldsInBody(
     mutableBody[field.name] = {
       ...(createData.length ? { create: createData } : {}),
       ...(connectData.length ? { connect: connectData } : {}),
+      ...(connectOrCreateData.length
+        ? { connectOrCreate: connectOrCreateData }
+        : {}),
       ...(updateData.length ? { update: updateData } : {}),
       ...(disconnectData.length ? { disconnect: disconnectData } : {}),
       ...(deleteManyIds.length
@@ -253,6 +299,50 @@ export function handleRelationFieldsInBody(
         );
       }
       mutableBody[field.name] = { create: dataToCreate };
+    } else if (relationData?.apiAction === "connectOrCreate") {
+      // Handle connectOrCreate: separate unique fields for where clause,
+      // include all fields in create clause
+      const { apiAction, ...dataWithoutApiAction } = relationData;
+      throwErrorIfApiActionIsInvalid(apiAction);
+
+      const whereClause: Record<string, any> = {};
+      const createClause: Record<string, any> = {};
+
+      // Identify unique fields for the where clause by checking against schema
+      for (const [key, value] of Object.entries(dataWithoutApiAction)) {
+        if (canBeUsedToConnect(field.type, { [key]: value })) {
+          whereClause[key] = value;
+        }
+        createClause[key] = value;
+      }
+
+      if (Object.keys(whereClause).length === 0) {
+        throw new AppError(
+          "connectOrCreate requires at least one unique field to be used in the where clause",
+          400,
+          "NoUniqueFieldForConnectOrCreate",
+          { data: relationData }
+        );
+      }
+
+      // Process nested relations in the create clause
+      let finalCreateClause = createClause;
+      if (nestedRelations?.singular || nestedRelations?.list) {
+        finalCreateClause = handleRelationFieldsInBody(
+          createClause,
+          nestedRelations,
+          ignoreActions,
+          true,
+          "create"
+        );
+      }
+
+      mutableBody[field.name] = {
+        connectOrCreate: {
+          where: whereClause,
+          create: finalCreateClause,
+        },
+      };
     } else if (relationData?.apiAction === "disconnect") {
       mutableBody[field.name] = { disconnect: true };
     } else if (
