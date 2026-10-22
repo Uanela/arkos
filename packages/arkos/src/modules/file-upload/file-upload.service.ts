@@ -12,9 +12,22 @@ import {
   ArkosRequestHandler,
   ArkosResponse,
 } from "../../types";
-import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
+import {
+  ImageOptimizationOptions,
+  processFile,
+  processImage,
+} from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 import { pascalCase } from "../../exports/utils";
+import { resolveUploadPath } from "./utils/helpers/upload-path.helper";
+
+function decodeUploadFileName(fileName: string): string {
+  try {
+    return decodeURIComponent(fileName);
+  } catch {
+    return fileName;
+  }
+}
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
@@ -204,25 +217,23 @@ export class FileUploadService {
         : pathAfterBaseRoute;
 
       const fileTypes = ["images", "videos", "documents", "files"];
-      let fileType: string | null = null;
-      let fileName: string | null = null;
+      const [fileType, ...fileNameSegments] = cleanPath.split("/");
 
-      for (const type of fileTypes) {
-        const typeIndex = cleanPath.indexOf(type + "/");
-        if (typeIndex !== -1) {
-          fileType = type;
-          fileName = cleanPath.substring(typeIndex + type.length + 1);
-          break;
-        }
-      }
-
-      if (!fileType || !fileName) {
+      if (
+        !fileType ||
+        !fileTypes.includes(fileType) ||
+        fileNameSegments.length === 0
+      ) {
         throw new AppError(
           "Unable to determine file type or file name from URL",
           400,
           "UnableToProcessFileURL"
         );
       }
+
+      const fileName = fileNameSegments
+        .map(decodeUploadFileName)
+        .join("/");
 
       // Get the appropriate uploader service based on file type
       const {
@@ -232,19 +243,19 @@ export class FileUploadService {
         videoUploadService,
       } = getFileUploadServices();
 
-      let filePath: string;
+      let targetService: FileUploadService;
       switch (fileType) {
         case "images":
-          filePath = path.join(imageUploadService.uploadDir, fileName);
+          targetService = imageUploadService;
           break;
         case "videos":
-          filePath = path.join(videoUploadService.uploadDir, fileName);
+          targetService = videoUploadService;
           break;
         case "documents":
-          filePath = path.join(documentUploadService.uploadDir, fileName);
+          targetService = documentUploadService;
           break;
         case "files":
-          filePath = path.join(fileUploadService.uploadDir, fileName);
+          targetService = fileUploadService;
           break;
         default:
           throw new AppError(
@@ -253,6 +264,10 @@ export class FileUploadService {
             "UnsupportedFileType"
           );
       }
+
+      const filePath = resolveUploadPath(targetService.uploadDir, fileName);
+
+      if (!filePath) throw new AppError("File not found", 404, "FileNotFound");
 
       await promisify(fs.stat)(filePath);
       await promisify(fs.unlink)(filePath);
@@ -301,12 +316,7 @@ export class FileUploadService {
     req: ArkosRequest,
     res: ArkosResponse,
     next: ArkosNextFunction,
-    options: {
-      format?: string;
-      width?: number;
-      height?: number;
-      resizeTo?: number;
-    } = {}
+    options: ImageOptimizationOptions = {}
   ): Promise<string | string[] | null> {
     const { fileUpload } = getArkosConfig();
     fileUpload?.baseRoute || "/api/uploads";
@@ -430,8 +440,9 @@ export class FileUploadService {
           throw new AppError(`Unsupported file type: ${fileType}`, 400);
       }
 
-      // Construct the full file path
-      const filePath = path.join(targetService.uploadDir, fileName);
+      const filePath = resolveUploadPath(targetService.uploadDir, fileName);
+
+      if (!filePath) throw new AppError("File not found", 404, "FileNotFound");
 
       // Check if file exists and delete it
       await promisify(fs.stat)(filePath);

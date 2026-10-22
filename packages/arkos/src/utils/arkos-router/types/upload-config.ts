@@ -1,4 +1,9 @@
-import { ArkosFile } from "../../../exports";
+import type {
+  ArkosFile,
+  UploadPrepare,
+  UploadPrepareFile,
+  UploadUrlPath,
+} from "../../../types/upload";
 
 export type UploadConfig =
   /**
@@ -12,7 +17,7 @@ export type UploadConfig =
    * uploads: {
    *   type: "single",
    *   field: "avatar",
-   *   uploadDir: "images",
+   *   uploadDir: "/images",
    *   maxSize: 1024 * 1024 * 5 // 5MB
    * }
    */
@@ -36,7 +41,7 @@ export type UploadConfig =
    *   field: "gallery",
    *   maxCount: 10,
    *   minCount: 1,
-   *   uploadDir: "images"
+   *   uploadDir: "/images"
    * }
    */
   | ({
@@ -64,9 +69,9 @@ export type UploadConfig =
    * uploads: {
    *   type: "fields",
    *   fields: [
-   *     { name: "avatar", type: "single", uploadDir: "images" },
-   *     { name: "resume", type: "single", uploadDir: "documents" },
-   *     { name: "banners[][images]", type: "array", maxCount: 5, uploadDir: "banners" }
+   *     { name: "avatar", type: "single", uploadDir: "/images" },
+   *     { name: "resume", type: "single", uploadDir: "/documents" },
+   *     { name: "banners[][images]", type: "array", maxCount: 5, uploadDir: "/banners" }
    *   ]
    * }
    */
@@ -74,7 +79,17 @@ export type UploadConfig =
       type: "fields";
       /** Array of field configurations describing multipart form fields to process */
       fields: UploadConfigFieldEntry[];
-    } & Pick<ArkosRouterBaseUploadConfig, "deleteOnError">)
+    } & Pick<
+      ArkosRouterBaseUploadConfig,
+      | "deleteOnError"
+      | "image"
+      | "uploadDir"
+      | "urlPath"
+      | "serve"
+      | "prepare"
+      | "prepareFile"
+      | "overwrite"
+    >)
   | ({
       type: "fields";
       /** Array of field configurations describing multipart form fields to process */
@@ -103,11 +118,11 @@ export type UploadConfigFieldEntry =
    * A single-file field entry.
    *
    * @example
-   * { name: "avatar", type: "single", uploadDir: "images", required: true }
+   * { name: "avatar", type: "single", uploadDir: "/images", required: true }
    *
    * @example
    * // nested array path — one image per banner
-   * { name: "banners[][image]", type: "single", uploadDir: "banners" }
+   * { name: "banners[][image]", type: "single", uploadDir: "/banners" }
    */
   | ({
       /** Name of the form field. Supports bracket notation including nested array paths. */
@@ -118,11 +133,11 @@ export type UploadConfigFieldEntry =
    * A multi-file field entry.
    *
    * @example
-   * { name: "gallery", type: "array", maxCount: 6, uploadDir: "gallery" }
+   * { name: "gallery", type: "array", maxCount: 6, uploadDir: "/gallery" }
    *
    * @example
    * // nested array path — multiple images per banner, min 1 max 5
-   * { name: "banners[][images]", type: "array", minCount: 1, maxCount: 5, uploadDir: "banners" }
+   * { name: "banners[][images]", type: "array", minCount: 1, maxCount: 5, uploadDir: "/banners" }
    */
   | ({
       /** Name of the form field. Supports bracket notation including nested array paths. */
@@ -147,6 +162,65 @@ export type ArkosRouterBaseUploadConfig = {
    * @default Depends on the file type which is descovered by the file mimetype, otherwise falls to files.
    */
   uploadDir?: string;
+  /**
+   * Public URL for the uploaded files, relative to the file upload `baseRoute`.
+   *
+   * A string is a folder: the stored filename is appended. An object with
+   * `exact` is the complete public path relative to `baseRoute`: nothing is
+   * appended, and the path must be static.
+   *
+   * Requires `uploadDir` to be set.
+   *
+   * @since 1.8.0-rc
+   *
+   * @example
+   * // Files stored in uploads/storage/acme but served at /api/uploads/private/files
+   * uploadDir: "/storage/acme",
+   * urlPath: "/private/files"
+   *
+   * @example
+   * // The response URL is always /api/uploads/users/me/photo
+   * uploadDir: "/users/:userId/photo",
+   * urlPath: { exact: "/users/me/photo" }
+   */
+  urlPath?: UploadUrlPath;
+  /**
+   * Resolves the disk parameters for this upload folder. Required for every
+   * dynamic folder (`:param` in `uploadDir`). It may be async and may throw to
+   * deny the request.
+   *
+   * URL parameters are merged into the disk parameter map, with values
+   * returned by `prepare` taking precedence.
+   *
+   * @since 1.8.0-rc
+   */
+  prepare?: UploadPrepare;
+  /**
+   * Resolves per-file data before the file is written. Only `filename` is
+   * consumed. The returned filename is treated as a base name: the final
+   * saved extension is always preserved.
+   *
+   * May be async.
+   *
+   * @since 1.8.0-rc
+   */
+  prepareFile?: UploadPrepareFile;
+  /**
+   * Whether a file with the same target name may be replaced.
+   *
+   * @default true
+   * @since 1.8.0-rc
+   */
+  overwrite?: boolean;
+  /**
+   * Set to `false` to opt this upload directory out of the startup coverage
+   * check when `fileUpload.serving` is `"registered"`.
+   *
+   * Only `false` has meaning.
+   *
+   * @since 1.8.0-rc
+   */
+  serve?: boolean;
   /**
    * Whether to automatically delete uploaded files if an error occurs during request processing.
    * Cleanup happens when errors are thrown and not caught within the route handler.
@@ -205,6 +279,30 @@ export type ArkosRouterBaseUploadConfig = {
    * @default true
    */
   required?: boolean;
+  /**
+   * Image optimization options applied through Sharp for image uploads.
+   * When omitted, images fall back to the framework defaults (webp conversion).
+   *
+   * @example
+   * image: { resizeTo: 1200, quality: 80 }
+   * image: { format: "png", width: 800 }
+   */
+  image?: {
+    /** Output format, defaults to `webp` */
+    format?: string;
+    /** Output quality (1-100) for lossy formats (webp, jpeg, avif) */
+    quality?: number;
+    /** Target width, keeping aspect ratio */
+    width?: number;
+    /** Target height, keeping aspect ratio */
+    height?: number;
+    /** Target size to fit within, keeping aspect ratio */
+    resizeTo?: number;
+    /** Resize strategy, defaults to `inside` */
+    fit?: "cover" | "contain" | "fill" | "inside" | "outside";
+    /** Prevent upscaling images smaller than the requested dimensions */
+    withoutEnlargement?: boolean;
+  };
   /**
    * Open API field description
    */

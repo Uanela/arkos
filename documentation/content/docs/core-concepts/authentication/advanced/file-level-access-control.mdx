@@ -1,0 +1,382 @@
+---
+title: File Level Access Control
+description: Control which upload folders are served over HTTP and who can read them.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Uploaded files live on disk under `fileUpload.baseUploadDir`, but existing and being reachable over HTTP are separate decisions. File-level access control is the layer between them: it decides which folders the file upload endpoints expose and who is allowed to read them.
+
+This page covers the standalone upload endpoints. For the endpoint list and request formats, see [File Upload Routes](/docs/guides/file-handling/file-uploads/routes).
+
+> Available from v1.8.0-rc
+
+## Serving modes
+
+`fileUpload.serving` controls which folders the built-in `findFile` endpoint can serve:
+
+| Mode | Behavior |
+| ---- | -------- |
+| `"all"` (default) | Every folder under `baseUploadDir` is served at `${baseRoute}/<path>`. |
+| `"registered"` | Only the built-in `images`, `videos`, `documents`, and `files` roots are served. Other folders must be registered with `arkos.serveUploadDir()` or marked `serve: false`. |
+
+`create-arkos` scaffolds `serving: "registered"` for new projects, so custom upload folders are never publicly exposed by accident.
+
+In `"registered"` mode, a folder is reachable only if it is one of the built-in roots or was registered with `arkos.serveUploadDir()`. If you disable the `findFile` hook entirely, no built-in root is served either; every upload folder must then be registered or marked `serve: false` on the write side (see [Linking uploads to served URLs](#linking-uploads-to-served-urls)).
+
+## Registering a folder
+
+`arkos.serveUploadDir(dir, options)` exposes a folder under `baseUploadDir`. `dir` is relative to `baseUploadDir`; `urlPath` is relative to `baseRoute`. Mount the returned router on the file upload custom router:
+
+```ts title="src/modules/file-upload/file-upload.router.ts"
+import arkos, { ArkosRouter } from "arkos";
+import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";
+
+const router = ArkosRouter();
+
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/storage/acme", {
+    urlPath: "/private/files",
+    expressStatic: { maxAge: "1d" },
+  })
+);
+
+export default router;
+```
+
+A file stored at `uploads/storage/acme/report.pdf` is then served at `GET /api/uploads/private/files/report.pdf`.
+
+`serveUploadDir()` adds no authentication by itself. The mount config is the gate:
+
+```ts
+// Authenticated and authorized through Arkos
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/storage/acme", { urlPath: "/private/files" })
+);
+
+// Explicitly public
+router.use(
+  { authentication: false },
+  arkos.serveUploadDir("/public/banners", { urlPath: "/banners" })
+);
+```
+
+| Option | Type | Description | Default |
+| ------ | ---- | ----------- | ------- |
+| `urlPath` | `string` | Public URL folder, relative to `baseRoute` | `"/" + dir` |
+| `prepare` | `UploadPrepare` | Resolves disk params and gates the request. Required for every dynamic folder. | — |
+| `expressStatic` | `Parameters<typeof express.static>[1]` | Per-folder overrides merged over the global `fileUpload.expressStatic` options. | — |
+| `recursive` | `boolean` | Allow nested folders. When `false` (default), only direct files of `dir` are served. | `false` |
+
+## Authentication and authorization
+
+Authentication belongs to the router mount, not to `serveUploadDir()`. This reuses Arkos' normal authentication, authorization, rate limiting, and validation behavior instead of reimplementing it inside the serving helper.
+
+```ts
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/storage/acme", { urlPath: "/private/files" })
+);
+```
+
+File-level permissions follow the same static and dynamic modes as the rest of Arkos. For the full permission model, see [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
+
+### Public folders
+
+Pass `authentication: false` on the mount to expose a folder without a login:
+
+```ts
+router.use(
+  { authentication: false },
+  arkos.serveUploadDir("/public/banners", { urlPath: "/banners" })
+);
+```
+
+<Callout type="warning">
+Only use `authentication: false` when every file in the folder is safe for anonymous access. In `"registered"` mode this is the explicit switch that exposes a folder outside the built-in roots.
+</Callout>
+
+## `prepare`
+
+`prepare` is a plain function, not an Express middleware. Arkos calls it on every request for the folder and handles async errors and thrown values:
+
+```ts
+prepare(req, locals): { dirParams: Record<string, string> } | Promise<...>
+```
+
+`locals` is `res.locals`. There is no response object and no `next`.
+
+`prepare` is the **only** source of disk-folder params on the serve side. Arkos never falls back to `req.params` for the disk path. URL params are routing only.
+
+Use it to resolve the folder and authorize access in one place. Throw `AppError` for a client-facing denial. Throw a plain `Error` for an internal problem, such as a missing required param; the caller receives a generic internal-server error.
+
+```ts title="src/modules/file-upload/file-upload.router.ts"
+import arkos, { ArkosRouter } from "arkos";
+import { AppError } from "arkos/error-handler";
+import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";
+
+const router = ArkosRouter();
+
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/tenants/:tenantId/files", {
+    urlPath: "/tenants/:tenantId/files",
+    prepare: async (req) => {
+      const membership = await tenantMembers.find(
+        req.user.id,
+        req.params.tenantId
+      );
+
+      if (!membership)
+        throw new AppError("Access denied", 403, "Forbidden");
+
+      return { dirParams: { tenantId: membership.tenantId } };
+    },
+  })
+);
+
+export default router;
+```
+
+This is also the place for custom authorization that is not based on roles or permissions: signed URLs, API keys, custom sessions, or ownership checks.
+
+### Fine-grained permissions
+
+`prepare` can also consult a fine-grained policy, so privileged users such as multitenant admins can reach folders that regular users cannot:
+
+```ts title="src/modules/file-upload/file-upload.policy.ts"
+import { ArkosPolicy } from "arkos";
+
+const fileUploadPolicy = ArkosPolicy("file-upload")
+  .rule("View", { roles: ["User", "Admin"], name: "View Uploaded Files" })
+  .rule("ViewAllMultitenant", {
+    roles: ["Admin"],
+    name: "View All Tenant Files",
+  });
+
+export default fileUploadPolicy;
+```
+
+```ts title="src/modules/file-upload/file-upload.router.ts"
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/tenants/:tenantId/files", {
+    urlPath: "/tenants/:tenantId/files",
+    prepare: async (req) => {
+      const canViewAll = await fileUploadPolicy.canViewAllMultitenant(req.user);
+
+      if (canViewAll)
+        return { dirParams: { tenantId: req.params.tenantId } };
+
+      const membership = await tenantMembers.find(
+        req.user.id,
+        req.params.tenantId
+      );
+
+      if (!membership)
+        throw new AppError("Access denied", 403, "Forbidden");
+
+      return { dirParams: { tenantId: membership.tenantId } };
+    },
+  })
+);
+```
+
+The permission widens access; it does not skip validation. `tenantId` is still required to be a safe path segment and the resolved folder must stay inside `baseUploadDir`.
+
+## Dynamic folders
+
+A folder is dynamic when `dir` contains a `:param` segment. Dynamic folders require `prepare`, even when the mount is public. This is intentional: changing a URL must never be enough to read another tenant's or user's folder.
+
+```ts
+router.use(
+  { authentication: false },
+  arkos.serveUploadDir("/downloads/:token/files", {
+    urlPath: "/downloads/:token/files",
+    prepare: async (req) => {
+      const grant = await downloadGrants.findValid(req.params.token);
+
+      if (!grant)
+        throw new AppError("Invalid or expired link", 403, "Forbidden");
+
+      return { dirParams: { token: grant.storageKey } };
+    },
+  })
+);
+```
+
+`GET /api/uploads/downloads/abc123/files/invoice.pdf` calls `prepare` with `req.params.token === "abc123"`. The disk folder is built from `grant.storageKey`, not from the URL.
+
+A disk param does not need to appear in the public URL. Conversely, URL params that the disk template never uses are allowed and produce a startup warning unless suppressed (see [Warnings](#warnings)).
+
+Param values must be safe path segments:
+
+- They must match `^[A-Za-z0-9][A-Za-z0-9._-]*$` and be at most 128 characters.
+- Values containing `.`/`..`, trailing dots or spaces, or reserved Windows names are rejected.
+- The resolved folder must stay inside `baseUploadDir`; `..`, absolute paths, and symlink escapes return `404`.
+
+## Serving a single file (exact URLs)
+
+When `dir` resolves to a **file** rather than a directory, Arkos serves that file directly. This is how static public URLs such as `/users/me/avatar` are served: `urlPath` is static, `dir` points at the file, and `prepare` supplies the dynamic parts of the disk path.
+
+```ts
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/users/:userId/avatar/:fileName", {
+    urlPath: "/users/me/avatar",
+    prepare: (req) => ({
+      dirParams: {
+        userId: req.user.id,
+        fileName: "profile.webp",
+      },
+    }),
+  })
+);
+```
+
+The last segment of `dir` is dynamic because the file name comes from `prepare`; it may be a constant or a value loaded from your database. The framework does not care which.
+
+When `dir` resolves to a directory, the remainder of the request URL after the mount path is appended and served from that directory. `recursive` applies only in this mode: `false` (default) allows direct files only, `true` allows nested paths. A request that does not match the resolved shape returns `404`.
+
+## Per-file names, overwrites, and conflicts
+
+Writes use the same two concepts: `prepare` resolves folder params, and `prepareFile` prepares each individual file.
+
+```ts
+prepareFile(
+  { file, dirParams, index },
+  req,
+  locals
+): { filename?: string } | Promise<...>
+```
+
+- `file` is the original upload before saving.
+- `dirParams` is what `prepare` returned.
+- `index` is the position within the field: `0` for a single upload, the array index for `array`, and the position within the field for `fields`.
+
+Only `filename` is consumed today; other returned keys are reserved. `prepareFile` may be async for per-file lookups. On `fields` uploads, each field can define its own `prepareFile`, falling back to the upload-level one.
+
+```ts
+router.post(
+  {
+    path: "/api/users/me/avatar",
+    authentication: fileUploadPolicy.Update,
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "avatar",
+        uploadDir: "/users/:userId/avatar",
+        urlPath: { exact: "/users/me/avatar" },
+        prepare: (req) => ({ dirParams: { userId: req.user.id } }),
+        prepareFile: () => ({ filename: "profile" }),
+      },
+    },
+  },
+  usersController.updateAvatar
+);
+```
+
+`prepareFile` returns a **base name**. The final file keeps the original upload's extension no matter what extension is in the returned name; if image optimization changes the format, the final format wins. Return a single safe path segment; names containing separators, `..`, reserved Windows names, or trailing dots/spaces are rejected.
+
+The extension is always preserved, so `{ filename: "profile.webp" }` for an uploaded `avatar.png` is stored as `profile.png`.
+
+Replacing an existing file with the same name is the default. Set `overwrite: false` to prevent it:
+
+```ts
+uploads: {
+  type: "single",
+  field: "avatar",
+  uploadDir: "/users/:userId/avatar",
+  prepareFile: () => ({ filename: "profile" }),
+  overwrite: false,
+}
+```
+
+With `overwrite: false`, an existing target fails the request with `409 Conflict`.
+
+If two files in one request target the same path, the request fails with `409 Conflict`, every file written by that request is deleted, and the error is returned. For arrays, use the `index` argument in `prepareFile` to generate unique names.
+
+## Linking uploads to served URLs
+
+On router uploads, set `uploadDir` to the disk folder and `urlPath` to the public folder (both relative to their bases). Arkos uses `urlPath` when building the returned file URL:
+
+```ts
+experimental: {
+  uploads: {
+    type: "single",
+    field: "document",
+    uploadDir: "/storage/acme",
+    urlPath: "/private/files",
+  },
+},
+```
+
+`urlPath` also accepts an exact form:
+
+```ts
+urlPath: { exact: "/users/me/avatar" }
+```
+
+The exact string is the complete public path relative to `baseRoute`; the stored file name is not appended. Exact URLs must be static — `:params` are not allowed — and cannot be used with `type: "array"` because every file would share one URL. On `fields` uploads, each exact path must be unique. Exact URLs bypass folder-coverage validation, so they do not need `serve: false`.
+
+Disk params are resolved from `{ ...req.params, ...prepare.dirParams }`, with `prepare` winning. Both `uploadDir` and a string `urlPath` are built from that same map, so the returned URL always points at the folder that was actually written.
+
+In `"registered"` mode, Arkos validates at startup that a folder URL is covered by a built-in root or a `serveUploadDir()` registration whose params can be filled. If files are intentionally never served over HTTP, opt out explicitly:
+
+```ts
+experimental: {
+  uploads: {
+    type: "single",
+    field: "document",
+    uploadDir: "/private/contracts",
+    serve: false,
+  },
+},
+```
+
+In `"registered"` mode, an upload folder that is neither served nor marked `serve: false` fails at startup instead of writing files that can never be retrieved.
+
+## Startup validation and warnings
+
+Arkos fails closed at startup when registrations are unsafe or contradictory:
+
+- Every dynamic folder — on the serve side and the write side — requires `prepare`.
+- A write folder must be covered by a serve registration, or be marked `serve: false`.
+- Write and serve directory templates must match structurally, including identical param names.
+- Served URL paths and directories must be unique.
+- Built-in upload roots cannot be registered twice while `findFile` is enabled.
+- Exact write URLs must be static, safe, and unique per field.
+
+A URL param that the disk template never uses produces a warning, not an error. Suppress it in the Arkos config:
+
+```ts title="arkos.config.ts"
+export default {
+  warnings: {
+    fileUpload: {
+      suppressUnusedUrlParams: true,
+    },
+  },
+} satisfies ArkosConfig;
+```
+
+The warning is terminal output at startup; there is no editor-level diagnostic.
+
+## Built-in endpoint safety
+
+The built-in `findFile` endpoint applies the same protections to folders it serves:
+
+- URL paths are decoded segment by segment; encoded slashes are rejected.
+- The resolved file must stay inside `baseUploadDir`.
+- Dotfiles are ignored and directory listings are disabled.
+- `fallthrough` is `false`, so an unknown file returns `404` instead of continuing to another route.
+
+You can override the static behavior globally through `fileUpload.expressStatic` or per folder through `expressStatic`. See [File Upload Setup](/docs/guides/file-handling/file-uploads/setup#global-configuration).
+
+## Related
+
+- [File Upload Routes](/docs/guides/file-handling/file-uploads/routes) — standalone endpoints and request formats
+- [Router Upload](/docs/guides/file-handling/file-uploads/router-upload) — `uploadDir`, `urlPath`, `prepare`, and `prepareFile` on custom routes
+- [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control) — conditions on roles and resources
+- [Arkos Configuration](/docs/reference/arkos-configuration#fileuploadserving) — `fileUpload.serving` reference

@@ -114,7 +114,7 @@ describe("File Upload Router", () => {
       mockArkosConfig,
       "updateFile",
       "api/uploads/",
-      ":fileType/:fileName",
+      ":fileType/:fileName(.+)",
       expect.any(Object),
       "file-upload",
       expect.any(Object)
@@ -123,7 +123,7 @@ describe("File Upload Router", () => {
       mockArkosConfig,
       "deleteFile",
       "api/uploads/",
-      ":fileType/:fileName",
+      ":fileType/:fileName(.+)",
       expect.any(Object),
       "file-upload",
       expect.any(Object)
@@ -162,13 +162,13 @@ describe("File Upload Router", () => {
     );
 
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      "/api/uploads/:fileType/:fileName",
+      "/api/uploads/:fileType/:fileName(.+)",
       fileUploadController.updateFile,
       sendResponse
     );
 
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/api/uploads/:fileType/:fileName",
+      "/api/uploads/:fileType/:fileName(.+)",
       fileUploadController.deleteFile,
       sendResponse
     );
@@ -259,7 +259,7 @@ describe("File Upload Router", () => {
 
     // Assert
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      "/api/uploads/:fileType/:fileName",
+      "/api/uploads/:fileType/:fileName(.+)",
       expect.any(Function), // beforeUpdateFile
       fileUploadController.updateFile,
       expect.any(Function), // afterUpdateFile
@@ -284,7 +284,7 @@ describe("File Upload Router", () => {
 
     // Assert
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/api/uploads/:fileType/:fileName",
+      "/api/uploads/:fileType/:fileName(.+)",
       expect.any(Function), // beforeDeleteFile
       fileUploadController.deleteFile,
       expect.any(Function), // afterDeleteFile
@@ -352,14 +352,14 @@ describe("File Upload Router", () => {
     );
 
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      "/api/uploads/:fileType/:fileName",
+      "/api/uploads/:fileType/:fileName(.+)",
       fileUploadController.updateFile,
       expect.any(Function), // afterUpdateFile
       sendResponse
     );
 
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/api/uploads/:fileType/:fileName",
+      "/api/uploads/:fileType/:fileName(.+)",
       expect.any(Function), // beforeDeleteFile
       fileUploadController.deleteFile,
       sendResponse
@@ -418,7 +418,7 @@ describe("File Upload Router", () => {
         config,
         "updateFile",
         testCase.prefix,
-        ":fileType/:fileName",
+        ":fileType/:fileName(.+)",
         expect.any(Object),
         "file-upload",
         expect.any(Object)
@@ -428,7 +428,7 @@ describe("File Upload Router", () => {
         config,
         "deleteFile",
         testCase.prefix,
-        ":fileType/:fileName",
+        ":fileType/:fileName(.+)",
         expect.any(Object),
         "file-upload",
         expect.any(Object)
@@ -522,7 +522,7 @@ describe("File Upload Router", () => {
       mockArkosConfig,
       "updateFile",
       "api/uploads/",
-      ":fileType/:fileName",
+      ":fileType/:fileName(.+)",
       expect.any(Object),
       "file-upload",
       customAuthConfigs
@@ -531,7 +531,7 @@ describe("File Upload Router", () => {
       mockArkosConfig,
       "deleteFile",
       "api/uploads/",
-      ":fileType/:fileName",
+      ":fileType/:fileName(.+)",
       expect.any(Object),
       "file-upload",
       customAuthConfigs
@@ -599,5 +599,83 @@ describe("File Upload Router", () => {
       },
       customStaticOptions
     );
+  });
+
+  describe("registered serving mode", () => {
+    beforeEach(() => {
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        interceptors: {},
+        authConfigs: {},
+      });
+    });
+
+    test("should scope the findFile route to a fileType segment", () => {
+      const registeredConfig: any = {
+        fileUpload: {
+          ...mockArkosConfig.fileUpload,
+          serving: "registered",
+        },
+      };
+
+      getFileUploadRouter(registeredConfig);
+
+      expect(createRouteConfig).toHaveBeenCalledWith(
+        registeredConfig,
+        "findFile",
+        "api/uploads/",
+        ":fileType/*",
+        expect.any(Object),
+        "file-upload",
+        expect.any(Object)
+      );
+    });
+
+    test("should reject file types outside the built-in upload roots", async () => {
+      const registeredConfig: any = {
+        fileUpload: {
+          ...mockArkosConfig.fileUpload,
+          serving: "registered",
+        },
+      };
+
+      getFileUploadRouter(registeredConfig);
+
+      const [, , allowlistMiddleware] = mockRouter.get.mock.calls[0];
+      const next = jest.fn();
+      const req: any = {
+        params: { fileType: "private" },
+        path: "/api/uploads/private/secret.pdf",
+      };
+
+      await allowlistMiddleware(req, {}, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(next.mock.calls[0][0]).toMatchObject({
+        statusCode: 404,
+        code: "FileNotFound",
+      });
+    });
+
+    test("should allow the built-in upload roots", async () => {
+      const registeredConfig: any = {
+        fileUpload: {
+          ...mockArkosConfig.fileUpload,
+          serving: "registered",
+        },
+      };
+
+      getFileUploadRouter(registeredConfig);
+
+      const [, , allowlistMiddleware] = mockRouter.get.mock.calls[0];
+      const next = jest.fn();
+      const req: any = {
+        params: { fileType: "images" },
+        path: "/api/uploads/images/a.png",
+      };
+
+      await allowlistMiddleware(req, {}, next);
+
+      expect(next).toHaveBeenCalledWith();
+    });
   });
 });

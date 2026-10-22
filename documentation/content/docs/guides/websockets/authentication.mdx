@@ -21,6 +21,34 @@ chatGateway.hook("connection", (socket) => {
 });
 ```
 
+### Token sources
+
+Arkos checks three sources on every connection, in this order, and uses the first non-empty value:
+
+1. `socket.handshake.auth.token` — the `auth` option passed to `io(url, { auth: { token } })`.
+2. The `Authorization` header — a leading `Bearer` is stripped (case-insensitive, and the space is optional).
+3. The `arkos_access_token` cookie from the raw `Cookie` header — the same HttpOnly cookie Arkos sets for HTTP authentication.
+
+```ts
+// Uses the HttpOnly cookie. Cross-origin clients must send credentials.
+const socket = io("/chat", { withCredentials: true });
+
+// auth.token still wins when provided.
+const socket = io("/chat", { auth: { token } });
+```
+
+The cookie fallback is what lets a browser that already logged in over REST connect to an authenticated gateway without manually copying its token. `no-token` (the logout sentinel) is treated as absent.
+
+Because tokens are read from the engine.io handshake, Arkos parses the raw `Cookie` header once per connection and exposes the result as `socket.handshake.cookies` — you don't need `io.engine.use(cookieParser())`:
+
+```ts
+chatGateway.hook("connection", (socket) => {
+  console.log(socket.handshake.cookies?.theme);
+});
+```
+
+A token refreshed after the socket is established is not picked up until the client reconnects — `handshake.auth` and handshake headers are captured at connect time.
+
 ### Gotcha: you still need an auth mode configured
 
 `authentication: true` on a Gateway doesn't configure authentication from scratch — it reuses whatever mode (`static` or `dynamic`) you already set under `arkos.config.ts`. If you set `authentication: true` on a Gateway without ever configuring an authentication mode for your app, Arkos throws on startup rather than silently accepting unauthenticated sockets.

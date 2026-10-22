@@ -16,7 +16,6 @@ import {
 } from "../../exports/error-handler";
 import validateDto from "../../utils/validate-dto";
 import validateSchema from "../../utils/validate-schema";
-import { ZodSchema } from "zod";
 import { ClassConstructor } from "class-transformer";
 import { ValidatorOptions } from "class-validator";
 import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
@@ -26,6 +25,8 @@ import errorPrettifier from "./utils/error-prettifier";
 import { lenientDecode } from "../../utils/helpers/url-helpers";
 import { pascalCase } from "../../exports/utils";
 import validationManager from "../../types/validation/validation-manager";
+import { ZodType } from "zod";
+import { isZodSchema } from "../../utils/dynamic-loader";
 import ExitError from "../../utils/helpers/exit-error";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
@@ -138,14 +139,14 @@ export type ControllerActions =
  */
 export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
   prismaQueryOptions: PrismaQueryOptions<T> | AuthPrismaQueryOptions<T>,
-  action: ControllerActions
+  action: ControllerActions,
 ) {
   return (req: ArkosRequest, _: ArkosResponse, next: NextFunction) => {
     const configs = getArkosConfig();
 
     const resolvedOptions = resolvePrismaQueryOptions(
       prismaQueryOptions,
-      action
+      action,
     );
 
     const requestQueryOptions = configs?.request?.parameters
@@ -166,7 +167,7 @@ export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
 export function handleRequestLogs(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const startTime = Date.now();
 
@@ -208,7 +209,7 @@ export function handleRequestLogs(
         req.method
       }\x1b[0m ${lenientDecode(req.originalUrl)} ${statusColor}${
         res.statusCode
-      }\x1b[0m \x1b[35m${duration}ms\x1b[0m`
+      }\x1b[0m \x1b[35m${duration}ms\x1b[0m`,
     );
   });
 
@@ -220,38 +221,51 @@ export function handleRequestLogs(
  */
 export function handleRequestBodyValidationAndTransformation<T extends object>(
   schemaOrDtoClass?: ClassConstructor<T>,
-  classValidatorValidationOptions?: ValidatorOptions
+  classValidatorValidationOptions?: ValidatorOptions,
 ): ArkosRequestHandler;
 export function handleRequestBodyValidationAndTransformation<T extends object>(
-  schemaOrDtoClass?: ZodSchema<T>
+  schemaOrDtoClass?: ZodType<T>,
 ): ArkosRequestHandler;
 export function handleRequestBodyValidationAndTransformation<T extends object>(
-  schemaOrDtoClass?: ZodSchema<T> | ClassConstructor<T>,
-  classValidatorValidationOptions?: ValidatorOptions
+  schemaOrDtoClass?: ZodType<T> | ClassConstructor<T>,
+  classValidatorValidationOptions?: ValidatorOptions,
 ) {
   return catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       const validationConfigs = getArkosConfig()?.validation;
-      let body = req.body;
+      const resolver = validationConfigs?.resolver;
+      const body = req.body;
 
-      if (validationConfigs?.resolver === "class-validator" && schemaOrDtoClass)
-        req.body = await validateDto(
+      const dtoValidationOptions = deepmerge(
+        {
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          ...classValidatorValidationOptions,
+        },
+        validationConfigs?.validationOptions || {},
+      );
+
+      const runDtoValidation = () =>
+        validateDto(
           schemaOrDtoClass as ClassConstructor<T>,
           body,
-          deepmerge(
-            {
-              whitelist: true,
-              forbidNonWhitelisted: true,
-              ...classValidatorValidationOptions,
-            },
-            validationConfigs?.validationOptions || {}
-          )
+          dtoValidationOptions,
         );
-      else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
-        req.body = await validateSchema(schemaOrDtoClass as any, body);
+
+      const runZodValidation = () =>
+        validateSchema(schemaOrDtoClass as any, body);
+
+      if (schemaOrDtoClass) {
+        if (resolver === "class-validator") req.body = await runDtoValidation();
+        else if (resolver === "zod") req.body = await runZodValidation();
+        else if (resolver === "hybrid")
+          req.body = isZodSchema(schemaOrDtoClass)
+            ? await runZodValidation()
+            : await runDtoValidation();
+      }
 
       next();
-    }
+    },
   );
 }
 
@@ -273,12 +287,12 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
     Object.keys(routeConfig.validation || {}).length > 0
   )
     throw ExitError(
-      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`
+      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`,
     );
 
   if ((validators as any) === true)
     throw ExitError(
-      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
+      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`,
     );
 
   const validatorsKey: ("body" | "query" | "params")[] = [
@@ -296,7 +310,8 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         typeof openapi === "object" &&
         key != "body" &&
         openapi.parameters?.some(
-          (parameter: any) => parameter.in === validationToParameterMapping[key]
+          (parameter: any) =>
+            parameter.in === validationToParameterMapping[key],
         ) &&
         validators?.[key]
       ) {
@@ -304,7 +319,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
           `Error in ${routeConfig.path}: when usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.
 
 Read more about strict validation at https://www.arkosjs.com/docs/guides/validation/setup#strict-mode.
-`
+`,
         );
       }
 
@@ -316,7 +331,7 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         key === "body"
       ) {
         throw ExitError(
-          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`,
         );
       }
 
@@ -325,7 +340,7 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         !validationManager.isValidator(validators?.[key])
       )
         throw ExitError(
-          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`
+          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`,
         );
     });
 
@@ -336,12 +351,12 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         const NotAllowedInputError = new BadRequestError(
           `Request ${key} is not allowed on this route`,
           `Request${capitalize(key)}NotAllowed`,
-          { [key]: req[key] }
+          { [key]: req[key] },
         );
 
         const shouldValidate = validationManager.shouldValidate(
           validator,
-          req?.[key]
+          req?.[key],
         );
 
         if (shouldValidate === "prohibit") throw NotAllowedInputError;
@@ -352,27 +367,28 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
             req[key] = await (validationFn as any)(
               validator,
               req[key],
-              arkosConfig.validation?.validationOptions
+              arkosConfig.validation?.validationOptions,
             );
           } catch (err: any) {
-            const resolver = validationConfig?.resolver;
-            const isZod = validationConfig?.resolver === "zod";
+            const isZod = isZodSchema(validator);
 
             const prettifiedError = errorPrettifier.prettify(
-              resolver as any,
-              err
+              isZod ? "zod" : ("class-validator" as any),
+              err,
             );
+
             const error = prettifiedError[0];
             throw new AppError(
-              error.message,
+              error?.message || err?.message || `Request ${key} is invalid`,
               400,
               `InvalidRequest${pascalCase(key)}`,
-              isZod ? err.format() : err
+              isZod && typeof err?.format === "function" ? err.format() : err,
             );
           }
       }
 
       next();
-    }
+    },
   );
 }
+

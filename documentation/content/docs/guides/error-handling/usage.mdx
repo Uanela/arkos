@@ -144,15 +144,24 @@ Read more at [Interceptors — Handling Errors](/docs/core-concepts/components/i
 
 ## In-Line Error Handling For Service Layer
 
-```ts title="src/modules/post/post.hooks.ts"
-// For service-level errors
-export const onCreateOneError = [
-  async ({ error, data }) => {
-    console.error("Service error:", error.message);
-  },
-];
+With a [Service Override](/docs/core-concepts/components/service-override), handle service-layer failures inside the overridden method:
+
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
+
+class PostService extends BaseService<"post"> {
+  async createOne(data: any, queryOptions?: any) {
+    try {
+      return await super.createOne(data, queryOptions);
+    } catch (error) {
+      console.error("Service error:", (error as Error).message);
+      throw error;
+    }
+  }
+}
+
+export default new PostService("post");
 ```
-Read more at [Service Hooks — Handling Errors](/docs/core-concepts/components/service-hooks#onerror-service-hooks)
 
 ## Common Status Codes
 
@@ -167,7 +176,7 @@ Read more at [Service Hooks — Handling Errors](/docs/core-concepts/components/
 
 ## Error Hooks
 
-If you need to run cleanup or rollback logic when an operation fails — uploaded files, reserved inventory, database transactions — use `onError` interceptors or service hook error handlers rather than try/catch blocks in your controllers:
+If you need to run cleanup or rollback logic when an operation fails — uploaded files, reserved inventory, database transactions — use `onError` interceptors for HTTP-level concerns and the service method itself for domain-level concerns, rather than try/catch blocks in your controllers:
 
 - `onXxxError` in `*.interceptors.ts` — runs at the HTTP layer. See [Interceptors — Handling Errors](/docs/core-concepts/components/interceptors#handling-errors-in-interceptors).
-- `onXxxError` in `*.hooks.ts` — runs at the service layer for all calls. See [Service Hooks — Handling Errors](/docs/core-concepts/components/service-hooks#handling-errors-in-service-hooks).
+- Inside a [Service Override](/docs/core-concepts/components/service-override) method — runs at the service layer for all calls. Wrap `super.<method>()` in `try/catch` to clean up or roll back.

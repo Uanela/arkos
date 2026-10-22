@@ -1,0 +1,285 @@
+---
+title: "Announcing Arkos.js v1.8.0-rc"
+authors: [uanela]
+tags: [arkosjs, zod, prisma, authentication, uploads, websockets]
+date: 2026-10-22
+description: v1.8.0-rc moves Arkos to Zod 4 and Prisma 7 for new projects, turns auth and model services into overridable classes, and adds file-level access control with dynamic upload folders and controlled serving.
+---
+
+v1.8.0-rc is about making the layers underneath your app explicit. Validation now runs on Zod 4, newly generated projects target Prisma 7, authentication and model services are plain classes you can call and override, and uploaded files get the same authentication, authorization, and routing treatment as every other resource. Here's what shipped.
+
+## Zod 4, and a hybrid resolver
+
+Arkos now builds on Zod 4. OpenAPI generation uses `z.toJSONSchema(schema, { target: "openapi-3.0" })` directly, so `zod-to-json-schema` is gone — one less dependency and no adapter layer between your schema and the generated spec.
+
+The bigger addition is a third validation resolver:
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos";
+
+export default defineConfig({
+  validation: {
+    resolver: "hybrid",
+  },
+});
+```
+
+With `"hybrid"`, a route can use a Zod schema or a class-validator DTO, and Arkos detects which one it received at validation time. That makes incremental adoption practical: new routes can be written in Zod while existing DTOs keep working, without converting a whole module first. OpenAPI generation handles both.
+
+Generated projects use Zod `4.4.3`. Because Zod 3 and Zod 4 schemas are not interchangeable, `arkos dev` and `arkos start` now fail fast when a project declares `zod` but is still on major 3 while the resolver is `"zod"` or `"hybrid"` — you get the error at startup instead of on the first request.
+
+## New projects on Prisma 7
+
+`create-arkos` now scaffolds Prisma 7.9.1 for PostgreSQL, CockroachDB, MySQL, SQLite, and SQL Server, including the new setup that Prisma 7 expects:
+
+- a `prisma.config.ts` file with the datasource URL and schema path
+- the `prisma-client` generator, writing the client to `src/generated/prisma`
+- provider-specific driver adapters (`@prisma/adapter-pg`, `-mariadb`, `-better-sqlite3`, `-mssql`)
+- imports from the generated client (`@/src/generated/prisma/client`) instead of `@prisma/client`
+
+MongoDB projects stay on Prisma 6.19.3 for now, since the MongoDB setup has not moved to the same driver-adapter model.
+
+Existing projects are not forced to migrate. Arkos itself supports a wide Prisma peer range, so you can upgrade Arkos first and move Prisma on your own schedule. The Prisma 7 layout applies to newly generated projects.
+
+## Authentication is a service
+
+The built-in `/api/auth/*` routes used to contain the flow. In v1.8.0-rc, that flow lives in `AuthService` as real methods — `login`, `signup`, `getMe`, `updateMe`, `updatePassword`, `deleteMe`, and `logout` — and the controllers call them.
+
+That means you can call the exact same methods outside HTTP:
+
+```ts title="src/modules/billing/billing.service.ts"
+import { authService } from "arkos/services";
+
+const { user, accessToken } = await authService.login({
+  email: "jane@example.com",
+  password: "SecurePassword123!",
+});
+```
+
+No request, no response, no cookie handling — you get `{ user, accessToken }` and decide what to do with them. This works from background jobs, seeders, CLI commands, tests, or another service.
+
+You can also replace the flow with your own subclass and register it through the auth route hook:
+
+```ts title="src/modules/auth/auth.service.ts"
+import { AuthService } from "arkos/services";
+
+class AppAuthService extends AuthService {
+  async login(input: any, queryOptions?: any) {
+    const result = await super.login(input, queryOptions);
+
+    // audit log, extra claims, session bookkeeping...
+    return result;
+  }
+}
+
+export default new AppAuthService();
+```
+
+```ts title="src/modules/auth/auth.router.ts"
+import { RouteHook } from "arkos";
+import authService from "./auth.service";
+
+export const hook: RouteHook<"auth"> = {
+  service: authService,
+};
+```
+
+Anything you override is used by the built-in routes. To call those overridden methods programmatically, import your own instance instead of the default `authService`. Anything you don't override falls through to `AuthService`. If an overridden method resolves to `undefined` where a result is expected, Arkos throws instead of letting a broken response escape.
+
+A few related changes:
+
+- The login username field is inferred from the key you pass (`username`, `email`, or another configured field), including nested relations.
+- `allowedUsernames` in `arkos.config.ts` is now typed, so the wrong login field is caught by TypeScript.
+- Auth interceptor payloads (`afterGetMe`, `afterUpdateMe`, `afterSignup`, `afterDeleteMe`) receive users with the password field already removed, because sanitization happens in the service.
+- `logout` now requires both `req.user.id` and `req.accessToken` on the HTTP route; missing the token returns `401 UnauthenticatedLogout`.
+
+The [Manual Usage guide](https://arkosjs.com/docs/core-concepts/authentication/advanced/manual-usage) and the [AuthService reference](https://arkosjs.com/docs/reference/auth-service-object) cover the full method contracts and the direct-call caveats — HTTP-only features such as auth interceptors and `authenticate`/`authorize` hooks do not run when you call the service directly.
+
+## Service Override for model services
+
+The same pattern applies to model services. Instead of spreading business logic across `beforeCreateOne` / `afterCreateOne` functions in a `.hooks.ts` file, you extend `BaseService` and register the instance on the router through `RouteHook.service`:
+
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
+import CreatePostSchema from "./schemas/create-post.schema";
+
+class PostService extends BaseService<"post"> {
+  async createOne(data: CreatePostSchema, queryOptions?: any, context?: any) {
+    const slug = data.title.toLowerCase().replace(/\s+/g, "-");
+
+    return super.createOne({ ...data, slug }, queryOptions, context);
+  }
+}
+
+export default new PostService("post");
+```
+
+```ts title="src/modules/post/post.router.ts"
+import { RouteHook } from "arkos";
+import postService from "./post.service";
+
+export const hook: RouteHook = {
+  service: postService,
+};
+```
+
+Arkos uses your instance for that module's auto-generated routes. Methods you don't override fall through to `BaseService`, so `super.*` gives you the default behavior and the override is only the difference. If a method resolves to `undefined` where the route expects a result, Arkos throws instead of sending back an empty response.
+
+Arguments are positional and follow the same contract as the default methods: `createOne(data, queryOptions?, context?)`, `findMany(filters?, queryOptions?, context?)`, `updateOne(filters, data, queryOptions?, context?)`, and so on. `queryOptions` carries the Prisma-level work derived from `req.query` — sorting, field selection, pagination — and `context` is `{ user, accessToken }`. Mutation inputs can be typed with `ArkosPrismaInput` from `arkos/prisma`:
+
+```ts
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@/src/generated/prisma/client"; // or "@prisma/client"
+
+async createOne(data: ArkosPrismaInput<Prisma.PostCreateInput>) {
+  // ...
+}
+```
+
+This is the recommended home for business logic since v1.8.0. `.hooks.ts` files are still loaded and run, but each one logs a deprecation warning — the [migration guide](/blog/migrating-service-hooks-to-route-hook-service) moves a module at a time.
+
+## Uploads: dynamic folders and controlled serving
+
+Writing a file and making it reachable over HTTP used to be one decision. v1.8.0-rc separates them: the write side decides where a file lands, and the read side decides who can fetch it.
+
+On the write side, `prepare` resolves disk-folder parameters, and `prepareFile` names individual files:
+
+```ts title="src/modules/user/user.router.ts"
+import { RouteHook } from "arkos";
+
+export const hook: RouteHook = {
+  createOne: {
+    experimental: {
+      uploads: {
+        type: "array",
+        field: "photos",
+        uploadDir: "/users/:userId/photos",
+        urlPath: "/users/:userId/photos",
+        prepare: (req) => ({ dirParams: { userId: req.user.id } }),
+        prepareFile: ({ dirParams, index }) => ({
+          filename: `photo-${dirParams.userId}-${index}`,
+        }),
+      },
+    },
+  },
+};
+```
+
+Disk params come from `{ ...req.params, ...prepare.dirParams }`, with `prepare` winning. A dynamic `uploadDir` without `prepare` fails at startup. `prepareFile` receives `{ file, dirParams, index }` and returns a base name; the extension is always preserved. Set `overwrite: false` to get a `409 Conflict` instead of silently replacing an existing file.
+
+On the read side, `arkos.serveUploadDir()` registers a folder under `baseUploadDir` and mounts it on a normal Arkos router, so authentication, policies, rate limiting, and validation are the same ones your HTTP routes already use:
+
+```ts title="src/modules/file-upload/file-upload.router.ts"
+import arkos, { ArkosRouter } from "arkos";
+import { AppError } from "arkos/error-handler";
+import fileUploadPolicy from "./file-upload.policy";
+
+const router = ArkosRouter();
+
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/tenants/:tenantId/files", {
+    urlPath: "/tenants/:tenantId/files",
+    prepare: async (req) => {
+      const membership = await tenants.findMembership(
+        req.user.id,
+        req.params.tenantId
+      );
+
+      if (!membership) throw new AppError("Access denied", 403, "Forbidden");
+
+      return { dirParams: { tenantId: membership.tenantId } };
+    },
+  })
+);
+
+export default router;
+```
+
+`prepare` is the only source of disk-folder params on the serve side. Arkos never falls back to `req.params` for the disk path, so changing a URL cannot redirect a read into another tenant's folder. The same function is the natural place for ownership checks, signed URLs, API keys, or custom sessions.
+
+A new `fileUpload.serving` option controls what the built-in `findFile` endpoint exposes:
+
+| Mode | Behavior |
+| ---- | -------- |
+| `"all"` | Every folder under `baseUploadDir` is served. Default, matching earlier behavior. |
+| `"registered"` | Only `images`, `videos`, `documents`, and `files` are served. Other folders must be registered with `serveUploadDir()` or marked `serve: false`. |
+
+New projects scaffold `"registered"`, so a custom upload folder is not public by accident. Existing projects keep the `"all"` default.
+
+Images are also optimized with Sharp before the file reference reaches your request. The default output is WebP:
+
+```ts
+image: { resizeTo: 800, quality: 80 }
+```
+
+`format`, `quality`, `width`, `height`, `resizeTo`, `fit`, and `withoutEnlargement` are configurable per route, or per field on `fields` uploads.
+
+The [File Level Access Control guide](https://arkosjs.com/docs/core-concepts/authentication/advanced/file-level-access-control) has the full serving reference, and [How We Designed an Enterprise-Grade File Level Access Control](/blog/the-api-is-a-ladder) walks through the design decisions behind the API.
+
+## WebSocket gateways and clients
+
+Gateways got a set of refinements:
+
+- **Typed handler data.** `ArkosGatewayHandler` now infers its `data` type from the validation schema attached to the event, instead of defaulting to `any`.
+- **`register()` callback.** `gateway.register(io, options?, callback?)` — the callback runs after the gateway and any nested gateways are mounted, which removes the "did it mount yet?" guesswork from startup code.
+- **Cookie authentication.** Socket auth now checks `handshake.auth.token`, then the `Authorization` header, then the `arkos_access_token` cookie — the same HttpOnly cookie Arkos sets over HTTP. Browsers that already logged in through REST can connect to an authenticated gateway without copying a token by hand. The raw cookie header is parsed once per connection and exposed as `socket.handshake.cookies`.
+- **`.use()` middlewares** now run as real connection middleware, in ancestor-first order for nested gateways.
+
+There is also a new client binding: **`@arkosjs/svelte-websockets`**. It wraps `@arkosjs/websockets-client` for Svelte 5 and works both ways — runes (`chat.status`, `sendMessage.loading`) and stores (`$chat.status`), including from legacy components:
+
+```svelte
+<script lang="ts">
+  import { useGateway } from "@arkosjs/svelte-websockets";
+
+  const chat = useGateway("/chat");
+  const sendMessage = chat.useEmit("send_message");
+</script>
+
+<p>Status: {chat.status}</p>
+<button
+  onclick={() => sendMessage.emit({ text: "hello" }, { ack: true })}
+  disabled={sendMessage.loading}
+>
+  {sendMessage.loading ? "Sending..." : "Send"}
+</button>
+```
+
+Listeners, status, and emitters follow namespace changes and are cleaned up with the component.
+
+## Also in this release
+
+- **CLI fixes** — `generate` subcommands and shorthands work again, auth router tags are generated correctly, and fatal config errors no longer print a stack trace.
+- **Prisma 7 error handling** — driver-adapter error objects are mapped correctly by the error handler.
+- **Scalar** — `customCSS` is applied correctly.
+
+## Breaking changes and upgrade notes
+
+1. **Zod 4 is required** when `validation.resolver` is `"zod"` or `"hybrid"`. Upgrade `zod` to 4.x; generated projects use `4.4.3`. `arkos dev` and `arkos start` throw on major versions below 4.
+2. **`zod-to-json-schema` is removed.** OpenAPI output now comes from `z.toJSONSchema`, so generated schemas may differ slightly. Review your `/api/docs` output if you depend on exact shapes.
+3. **Images default to WebP.** Uploaded images are re-encoded unless you pass `image.format`. The filename, extension, and URL change accordingly.
+4. **`logout` requires an access token** on the HTTP route. Requests without one receive `401 UnauthenticatedLogout`.
+5. **Auth interceptor payloads no longer include `password`.** Sanitization moved into `AuthService`.
+6. **`.hooks.ts` is deprecated at runtime.** It still works in v1.8, with a warning.
+7. **New projects use Prisma 7 and `serving: "registered"`.** Existing projects are not affected by either default; the Prisma 7 layout applies to newly generated projects, and existing upload folders remain served under `"all"`.
+
+## How to try it
+
+```bash
+pnpm create arkos my-project
+```
+
+Or upgrade an existing project:
+
+```bash
+pnpm install arkos@latest
+```
+
+**Resources:**
+
+- [Full documentation](https://arkosjs.com/docs)
+- [File Level Access Control](https://arkosjs.com/docs/core-concepts/authentication/advanced/file-level-access-control)
+- [How We Designed Enterprise-Grade File Level Access Control](/blog/the-api-is-a-ladder)
+- [Manual auth usage](https://arkosjs.com/docs/core-concepts/authentication/advanced/manual-usage)
+- [Service Override](https://arkosjs.com/docs/core-concepts/components/service-override)
+- [GitHub repository](https://github.com/uanela/arkos)

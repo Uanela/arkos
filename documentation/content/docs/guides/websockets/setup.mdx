@@ -39,11 +39,25 @@ gateway.register(io);
 app.listen(server)
 ```
 
-`register(io, options?)` can only be called once per `io` instance — call it on your root Gateway and compose the rest with `.use()` (see below). Calling it twice throws.
+`register(io, options?, callback?)` can only be called once per `io` instance — call it on your root Gateway and compose the rest with `.use()` (see below). Calling it twice throws.
 
 ```ts
 gateway.register(io, {
   store: myRedisStore, // optional — defaults to an in-memory store
+});
+```
+
+> Available from `v1.8.0-rc`
+
+Pass a callback as the second or third argument to run code once the Gateway (and any nested Gateways) are mounted:
+
+```ts
+gateway.register(io, () => {
+  console.log("gateway mounted");
+});
+
+gateway.register(io, { store: myRedisStore }, () => {
+  console.log("gateway mounted on", gateway.nsp.name);
 });
 ```
 

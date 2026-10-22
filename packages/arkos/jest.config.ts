@@ -25,6 +25,7 @@ const config: Config = {
   coverageReporters: ["text", "lcov"],
   silent: false,
   setupFiles: ["<rootDir>/jest.setup.ts"],
+  workerIdleMemoryLimit: '512MB'
 };
 
 export default config;
