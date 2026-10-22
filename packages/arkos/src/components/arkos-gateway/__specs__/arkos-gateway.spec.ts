@@ -175,6 +175,7 @@ describe("IArkosGateway", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
       expect((gateway as any).events).toEqual([]);
       expect((gateway as any).pipes).toEqual([]);
+      expect((gateway as any).middlewares).toEqual([]);
       expect((gateway as any).gateways).toEqual([]);
       expect((gateway as any).hooks).toEqual([]);
     });
@@ -187,13 +188,14 @@ describe("IArkosGateway", () => {
   });
 
   describe("use()", () => {
-    it("should add middleware function to pipes array", () => {
+    it("should add middleware function to middlewares array", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
       const middleware = jest.fn();
 
       gateway.use(middleware);
 
-      expect((gateway as any).pipes).toContain(middleware);
+      expect((gateway as any).middlewares).toContain(middleware);
+      expect((gateway as any).pipes).not.toContain(middleware);
     });
 
     it("should add IArkosGateway instance to gateways array", () => {
@@ -214,8 +216,8 @@ describe("IArkosGateway", () => {
       parentGateway.use(childGateway, middleware1, middleware2);
 
       expect((parentGateway as any).gateways).toContain(childGateway);
-      expect((parentGateway as any).pipes).toContain(middleware1);
-      expect((parentGateway as any).pipes).toContain(middleware2);
+      expect((parentGateway as any).middlewares).toContain(middleware1);
+      expect((parentGateway as any).middlewares).toContain(middleware2);
     });
 
     it("should throw for invalid argument type", () => {
@@ -509,6 +511,76 @@ describe("IArkosGateway", () => {
       );
 
       expect(deepmergeSpy).toHaveBeenCalled();
+    });
+
+    // ---- Connection Middleware Tests ----
+    describe("connection middlewares", () => {
+      it("should register use() middlewares on the namespace", () => {
+        const { mockIo, mockNs } = createMockIo();
+        const gateway = new IArkosGateway({
+          name: "/chat",
+          authentication: false,
+        });
+        const middleware = jest.fn();
+        gateway.use(middleware);
+
+        (gateway as any)._register(mockIo, undefined, [], [], {});
+
+        expect(mockNs.use).toHaveBeenCalledTimes(1);
+      });
+
+      it("should register middlewares before the authentication middleware", () => {
+        const { mockIo, mockNs } = createMockIo();
+        const gateway = new IArkosGateway({
+          name: "/chat",
+          authentication: true,
+        });
+        const middleware = jest.fn();
+        gateway.use(middleware);
+
+        (gateway as any)._register(mockIo, undefined, [], [], {});
+
+        expect(mockNs.use).toHaveBeenCalledTimes(2);
+
+        const socket = createMockSocket();
+        const next = jest.fn();
+        mockNs.use.mock.calls[0][0](socket, next);
+
+        expect(middleware).toHaveBeenCalledWith(socket, next);
+      });
+
+      it("should drill parent middlewares down to child namespaces first", () => {
+        const parentNs = createMockNamespace();
+        const childNs = createMockNamespace();
+        const mockIo: any = {
+          of: jest.fn((name: string) =>
+            name === "/chat/admin" ? childNs : parentNs
+          ),
+        };
+        const parentGateway = new IArkosGateway({ name: "/chat" });
+        const childGateway = new IArkosGateway({ name: "/admin" });
+        const parentMiddleware = jest.fn();
+        const childMiddleware = jest.fn();
+        parentGateway.use(parentMiddleware);
+        childGateway.use(childMiddleware);
+        parentGateway.use(childGateway);
+
+        (parentGateway as any)._register(mockIo, undefined, [], [], {});
+
+        // parent middleware, child middleware, then child auth middleware
+        expect(childNs.use).toHaveBeenCalledTimes(3);
+        const [parentWrapper, childWrapper] = childNs.use.mock.calls.map(
+          (call: any[]) => call[0]
+        );
+        const socket = createMockSocket();
+        const next = jest.fn();
+
+        parentWrapper(socket, next);
+        childWrapper(socket, next);
+
+        expect(parentMiddleware).toHaveBeenCalledWith(socket, next);
+        expect(childMiddleware).toHaveBeenCalledWith(socket, next);
+      });
     });
 
     // ---- Auth Middleware Tests ----
@@ -1516,7 +1588,8 @@ describe("IArkosGateway", () => {
           expect.objectContaining({ name: "/chat" }),
           expect.any(Array),
           expect.any(Array),
-          expect.any(Object)
+          expect.any(Object),
+          expect.any(Array)
         );
       });
 

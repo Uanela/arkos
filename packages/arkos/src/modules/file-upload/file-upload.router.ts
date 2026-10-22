@@ -21,6 +21,7 @@ import { UserArkosConfig } from "../../utils/define-config";
 import { FileUploadRouterEndpoint } from "../../types/router-config";
 import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
 import AppError from "../error-handler/utils/app-error";
+import ExitError from "../../utils/helpers/exit-error";
 
 export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
   const router = ArkosRouter();
@@ -59,7 +60,7 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
     if (routerValidator.isExpressRouter(customRouter))
       router.use({ path: basePathname }, customRouter);
     else
-      throw Error(
+      throw ExitError(
         `ValidationError: The exported router from file-upload.router.${getUserFileExtension()} is not a valid express or arkos Router.`
       );
   }
