@@ -24,13 +24,26 @@ import AppError from "../../../../modules/error-handler/utils/app-error";
 import { RequestHandler } from "express";
 import {
   extractRequestInfo,
-  generateRelativePath,
   ImageOptimizationOptions,
   optimizeImage,
 } from "../../../../modules/file-upload/utils/helpers/file-upload.helpers";
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { catchAsync } from "../../../../exports/error-handler";
-import { ArkosFile } from "../../../../types/upload";
+import {
+  ArkosFile,
+  UploadDirParams,
+  UploadPrepare,
+  UploadPrepareFile,
+  UploadUrlPath,
+} from "../../../../types/upload";
+import {
+  isSafeUploadParam,
+  normalizeUploadDir,
+  normalizeUploadUrlPath,
+  resolveUploadPath,
+} from "../../../../modules/file-upload/utils/helpers/upload-path.helper";
+import { uploadServingRegistry } from "../../../../modules/file-upload/utils/helpers/upload-serving.registry";
+import { ConflictError } from "../../../../modules/error-handler/utils/errors";
 
 function determineUploadDir(file: Express.Multer.File) {
   if (file.mimetype.includes?.("image")) return "/images";
@@ -41,31 +54,236 @@ function determineUploadDir(file: Express.Multer.File) {
   return "/files";
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const arkosConfig = getArkosConfig();
-    const baseUploadDir = arkosConfig.fileUpload?.baseUploadDir || "/uploads";
-    let uploadDir =
-      (req.headers["x-upload-dir"] as string) || determineUploadDir(file);
-    req.headers["x-upload-dir"] = uploadDir;
+type UploadSettings = {
+  uploadDir?: string;
+  urlPath?: UploadUrlPath;
+  prepare?: UploadPrepare;
+  prepareFile?: UploadPrepareFile;
+  overwrite?: boolean;
+  key: string;
+};
 
-    const fullUploadDir = path.resolve(
-      path.join(
-        process.cwd(),
-        baseUploadDir.replaceAll("//", "/"),
-        uploadDir.replaceAll("//", "/")
-      )
+type ResolvedUploadSettings = {
+  dirParams: UploadDirParams;
+  uploadDir: string;
+  urlPath: string;
+  urlPathExact: boolean;
+};
+
+function getTemplateParams(template: string): string[] {
+  return template
+    .split("/")
+    .filter((segment) => segment.startsWith(":"))
+    .map((segment) => segment.slice(1).replace(/\(.*\)$/, ""));
+}
+
+function substituteUploadTemplate(
+  template: string,
+  values: Record<string, string>,
+  label: string
+): string {
+  const missing: string[] = [];
+
+  const result = template
+    .split("/")
+    .map((segment) => {
+      if (!segment.startsWith(":")) return segment;
+
+      const name = segment.slice(1).replace(/\(.*\)$/, "");
+      const value = values[name];
+
+      if (value === undefined) {
+        missing.push(name);
+        return segment;
+      }
+
+      if (!isSafeUploadParam(value))
+        throw new Error(`Invalid upload param ":${name}" for ${label}`);
+
+      return value;
+    })
+    .join("/");
+
+  if (missing.length > 0)
+    throw new Error(
+      `Missing required upload param(s) ${missing
+        .map((name) => `":${name}"`)
+        .join(", ")} for ${label}.`
     );
 
-    if (!fs.existsSync(fullUploadDir))
-      fs.mkdirSync(fullUploadDir, { recursive: true });
+  return result;
+}
 
-    cb(null, fullUploadDir);
+function stripExtension(filename: string): string {
+  const ext = path.extname(filename);
+  return ext ? filename.slice(0, -ext.length) : filename;
+}
+
+const RESERVED_FILE_NAMES = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+
+function isSafeFileName(filename: string): boolean {
+  return (
+    typeof filename === "string" &&
+    filename.length > 0 &&
+    filename.length <= 255 &&
+    !filename.includes("/") &&
+    !filename.includes("\\") &&
+    !filename.includes("\0") &&
+    filename !== "." &&
+    filename !== ".." &&
+    !/[. ]$/.test(filename) &&
+    !RESERVED_FILE_NAMES.test(filename)
+  );
+}
+
+function isInside(base: string, target: string): boolean {
+  const relative = path.relative(base, target);
+  return (
+    relative === "" ||
+    (!relative.startsWith(`..${path.sep}`) &&
+      relative !== ".." &&
+      !path.isAbsolute(relative))
+  );
+}
+
+function safeOriginalBaseName(file: Express.Multer.File): string {
+  const ext = path.extname(file.originalname);
+  const base = path
+    .basename(file.originalname, ext)
+    .replace(/[^A-Za-z0-9._ -]/g, "-")
+    .replace(/^[. ]+/, "");
+
+  return base || "file";
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    void (async () => {
+      try {
+        const arkosReq = req as ArkosRequest;
+        const arkosConfig = getArkosConfig();
+        const baseUploadDir =
+          arkosConfig.fileUpload?.baseUploadDir || "/uploads";
+        const settings = uploadManager.getUploadSettingsForFile(
+          arkosReq.__arkos?.uploadConfig,
+          file
+        );
+        const resolved = await uploadManager.resolveUploadSettings(
+          arkosReq,
+          file,
+          settings
+        );
+        const basePath = path.resolve(
+          process.cwd(),
+          baseUploadDir.replaceAll("//", "/")
+        );
+        const fullUploadDir = resolveUploadPath(
+          basePath,
+          resolved.uploadDir,
+          { strictSegments: true }
+        );
+
+        if (!fullUploadDir)
+          throw new Error(`Invalid upload directory "${resolved.uploadDir}"`);
+
+        (file as ArkosFile).__arkos = {
+          uploadDir: resolved.uploadDir,
+          urlPath: resolved.urlPath,
+          urlPathExact: resolved.urlPathExact,
+          dirParams: resolved.dirParams,
+          uploadPath: fullUploadDir,
+        };
+
+        if (!fs.existsSync(fullUploadDir))
+          fs.mkdirSync(fullUploadDir, { recursive: true });
+
+        cb(null, fullUploadDir);
+      } catch (error) {
+        cb(error as Error, "");
+      }
+    })();
   },
-  filename: (_, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, `${file.originalname.replace(ext, "")}-${uniqueSuffix}${ext}`);
+  filename: (req, file, cb) => {
+    void (async () => {
+      try {
+        const arkosReq = req as ArkosRequest;
+        const settings = uploadManager.getUploadSettingsForFile(
+          arkosReq.__arkos?.uploadConfig,
+          file
+        );
+        const meta = (file as ArkosFile).__arkos;
+        const index = uploadManager.nextFileIndex(arkosReq, file);
+        let preparedBase: string | undefined;
+
+        if (settings.prepareFile) {
+          const result = await settings.prepareFile(
+            {
+              file: file as ArkosFile,
+              dirParams: meta?.dirParams || {},
+              index,
+            },
+            arkosReq,
+            arkosReq.res?.locals || {}
+          );
+
+          if (result?.filename !== undefined) {
+            if (typeof result.filename !== "string")
+              throw new Error("prepareFile must return a string filename");
+
+            preparedBase = stripExtension(result.filename);
+
+            if (!isSafeFileName(preparedBase))
+              throw new Error(
+                `Invalid file name "${result.filename}" returned by prepareFile`
+              );
+          }
+        }
+
+        const ext = path.extname(file.originalname);
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const finalName = preparedBase
+          ? `${preparedBase}${ext}`
+          : `${safeOriginalBaseName(file)}-${uniqueSuffix}${ext}`;
+        const uploadPath = meta?.uploadPath || "";
+
+        if (!uploadPath)
+          throw new Error(
+            `Unable to resolve the upload directory for file "${file.originalname}"`
+          );
+
+        const targetPath = path.resolve(uploadPath, finalName);
+
+        if (!isInside(uploadPath, targetPath))
+          throw new Error(`Invalid file name "${finalName}"`);
+
+        const targets = (arkosReq.__arkos!.uploadTargetPaths ??= new Set());
+
+        if (targets.has(targetPath))
+          throw new ConflictError(
+            `Duplicate upload target "${finalName}" in the same request`,
+            "UploadConflict",
+            { filename: finalName }
+          );
+
+        if (settings.overwrite === false && fs.existsSync(targetPath))
+          throw new ConflictError(
+            `File "${finalName}" already exists and overwrite is disabled`,
+            "UploadConflict",
+            { filename: finalName }
+          );
+
+        targets.add(targetPath);
+        (arkosReq.__arkos!.uploadWrittenPaths ??= []).push(targetPath);
+        (file as ArkosFile).__arkos = {
+          ...meta,
+          targetPath,
+        };
+
+        cb(null, finalName);
+      } catch (error) {
+        cb(error as Error, "");
+      }
+    })();
   },
 });
 
@@ -235,7 +453,7 @@ const optimizeUploadedImages = async (
     } catch (error: any) {
       if (error?.message === "Input file contains unsupported image format")
         continue;
-      throw new AppError(error.message, 400, "CannotProcessImage", { error });
+      throw new Error(`Cannot process uploaded image: ${error.message}`);
     }
   }
 };
@@ -299,6 +517,140 @@ function resolveFieldEntry(
 }
 
 class UploadManager {
+  getUploadSettingsForFile(
+    config: UploadConfig | undefined,
+    file: Express.Multer.File
+  ): UploadSettings {
+    if (!config) return { key: "config" };
+
+    if (config.type === "fields") {
+      const field = config.fields.find((entry) => {
+        if (entry.name === file.fieldname) return true;
+        try {
+          return buildPathMatcher(entry.name).test(file.fieldname);
+        } catch {
+          return false;
+        }
+      });
+      const typedField =
+        field && "type" in field && field.type !== undefined ? field : undefined;
+
+      return {
+        uploadDir: typedField?.uploadDir ?? config.uploadDir,
+        urlPath: typedField?.urlPath ?? config.urlPath,
+        prepare: typedField?.prepare ?? config.prepare,
+        prepareFile: typedField?.prepareFile ?? config.prepareFile,
+        overwrite: typedField?.overwrite ?? config.overwrite,
+        key: `field:${field?.name ?? file.fieldname}`,
+      };
+    }
+
+    return {
+      uploadDir: config.uploadDir,
+      urlPath: config.urlPath,
+      prepare: config.prepare,
+      prepareFile: config.prepareFile,
+      overwrite: config.overwrite,
+      key: `config:${config.type}`,
+    };
+  }
+
+  async resolveUploadSettings(
+    req: ArkosRequest,
+    file: Express.Multer.File,
+    settings: UploadSettings
+  ): Promise<ResolvedUploadSettings> {
+    req.__arkos ??= {};
+    const cached = req.__arkos.preparedUploads?.get(settings.key);
+    if (cached) return cached;
+
+    const prepared = settings.prepare
+      ? await settings.prepare(req, req.res?.locals || {})
+      : undefined;
+    const dirParams: UploadDirParams = {};
+
+    for (const [key, value] of Object.entries(prepared?.dirParams || {})) {
+      if (typeof value !== "string")
+        throw new Error(`prepare returned a non-string value for ":${key}"`);
+
+      dirParams[key] = value;
+    }
+
+    const values: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(req.params || {}))
+      if (typeof value === "string") values[key] = value;
+
+    Object.assign(values, dirParams);
+
+    const uploadDir = normalizeUploadDir(
+      substituteUploadTemplate(
+        settings.uploadDir || determineUploadDir(file),
+        values,
+        "upload directory"
+      )
+    );
+
+    let urlPath: string;
+    let urlPathExact = false;
+
+    if (settings.urlPath && typeof settings.urlPath === "object") {
+      urlPath = normalizeUploadUrlPath(settings.urlPath.exact);
+      urlPathExact = true;
+    } else {
+      urlPath = normalizeUploadUrlPath(
+        substituteUploadTemplate(
+          settings.urlPath || `/${uploadDir}`,
+          values,
+          "upload URL path"
+        )
+      );
+    }
+
+    const resolved: ResolvedUploadSettings = {
+      dirParams,
+      uploadDir,
+      urlPath,
+      urlPathExact,
+    };
+
+    (req.__arkos!.preparedUploads ??= new Map()).set(settings.key, resolved);
+
+    return resolved;
+  }
+
+  nextFileIndex(req: ArkosRequest, file: Express.Multer.File): number {
+    req.__arkos ??= {};
+    const indexes = (req.__arkos.uploadFileIndexes ??= {});
+    const index = indexes[file.fieldname] ?? 0;
+    indexes[file.fieldname] = index + 1;
+    return index;
+  }
+
+  async cleanupRequestFiles(req: ArkosRequest): Promise<void> {
+    const paths = req.__arkos?.uploadWrittenPaths || [];
+
+    for (const filePath of paths) {
+      try {
+        await fs.promises.unlink(filePath);
+      } catch (error: any) {
+        if (error?.code !== "ENOENT")
+          sheu.warn(
+            `Failed to delete file: ${filePath} because ${error.message}`,
+            { timestamp: true }
+          );
+      }
+    }
+
+    if (req.__arkos) {
+      req.__arkos.uploadWrittenPaths = [];
+      req.__arkos.uploadTargetPaths = new Set();
+    }
+
+    delete req.file;
+    delete req.files;
+  }
+
   private getUpload({
     maxSize = 1024 * 1024 * 5,
     allowedFileTypes = /.*/,
@@ -337,14 +689,73 @@ class UploadManager {
     }
   }
 
+  registerUploadConfig(config: UploadConfig, route: string) {
+    const register = (
+      dir: string | undefined,
+      urlPath: UploadUrlPath | undefined,
+      serve: boolean | undefined,
+      hasPrepare: boolean,
+      type: "single" | "array" | "fields"
+    ) =>
+      uploadServingRegistry.registerWrite({
+        dir,
+        urlPath,
+        serve,
+        route,
+        hasPrepare,
+        type,
+      });
+
+    if (config.type === "single" || config.type === "array") {
+      register(
+        config.uploadDir,
+        config.urlPath,
+        config.serve,
+        !!config.prepare,
+        config.type
+      );
+      return;
+    }
+
+    for (const field of config.fields) {
+      const isLegacy = !("type" in field) || field.type === undefined;
+
+      if (isLegacy) {
+        register(
+          config.uploadDir,
+          config.urlPath,
+          config.serve,
+          !!config.prepare,
+          "array"
+        );
+        continue;
+      }
+
+      register(
+        field.uploadDir ?? config.uploadDir,
+        field.urlPath ?? config.urlPath,
+        field.serve ?? config.serve,
+        !!(field.prepare ?? config.prepare),
+        field.type ?? "array"
+      );
+    }
+  }
+
   handleUpload(config: UploadConfig, oldFilePath?: string) {
     return catchAsync(
       (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
         const middleware = this.getMiddleware(config);
-        req.headers["x-upload-dir"] =
-          "uploadDir" in config ? config.uploadDir : undefined;
+        req.__arkos = { ...req.__arkos, uploadConfig: config };
         middleware(req, res, async (err: any) => {
-          if (err) return next(err);
+          if (err) {
+            if (
+              err instanceof ConflictError ||
+              err?.code === "UploadConflict"
+            )
+              await this.cleanupRequestFiles(req);
+
+            return next(err);
+          }
 
           // .any() gives req.files as File[] — normalize to { [fieldname]: File[] }
           // so groupFilesByPattern works correctly for nested array paths
@@ -595,31 +1006,26 @@ class UploadManager {
   handlePostUpload(config: UploadConfig) {
     return catchAsync(
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-        // eslint-disable-next-line no-console
         const { baseURL, baseRoute } = extractRequestInfo(req);
-        const arkosConfig = getArkosConfig();
 
-        const normalizePath = (filePath: string): string => {
-          let fullBaseUploadDir = path.resolve(
-            path.join(process.cwd(), arkosConfig.fileUpload?.baseUploadDir!)
-          );
-          fullBaseUploadDir = fullBaseUploadDir.replace(process.cwd(), "");
-          return filePath
-            .replaceAll(process.cwd(), "")
-            .replace(`/${fullBaseUploadDir}`, "")
-            .replace(fullBaseUploadDir, "")
-            .replace(/\\/g, "/");
+        const baseRoutePath =
+          baseRoute === "/" ? "" : normalizeUploadUrlPath(baseRoute);
+
+        const getPublicRelativePath = (file: ArkosFile): string => {
+          if (file.__arkos?.urlPathExact)
+            return normalizeUploadUrlPath(file.__arkos.urlPath || "/");
+
+          const publicDir =
+            file.__arkos?.urlPath ||
+            `/${normalizeUploadDir(file.__arkos?.uploadDir || "")}`;
+
+          return `${normalizeUploadUrlPath(publicDir)}/${
+            file.filename || path.basename(file.path)
+          }`.replace(/\/+/g, "/");
         };
 
-        const buildFileURL = (file: ArkosFile): string => {
-          const relativePath = generateRelativePath(
-            file.path,
-            req.headers["x-upload-dir"] as string
-          );
-          return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
-            relativePath.startsWith("/") ? relativePath : `/${relativePath}`
-          }`;
-        };
+        const buildFileURL = (file: ArkosFile): string =>
+          `${baseURL}${baseRoutePath}${getPublicRelativePath(file)}`;
 
         const getAttachValue = (
           file: ArkosFile,
@@ -628,12 +1034,7 @@ class UploadManager {
           const url = buildFileURL(file);
 
           file.url = url;
-          file.pathname =
-            (baseRoute === "/"
-              ? ""
-              : baseRoute.startsWith("/")
-                ? baseRoute
-                : `/${baseRoute}`) + normalizePath(file.path);
+          file.pathname = `${baseRoutePath}${getPublicRelativePath(file)}`;
 
           if (attachToBody === false) return undefined;
           if (attachToBody === "url") return url;
@@ -832,11 +1233,7 @@ class UploadManager {
           }
         } catch (err: any) {
           if (err instanceof AppError) throw err;
-          throw new AppError(
-            `File uploads post processing failed ${err.message}`,
-            500,
-            "FileUploadPostProcessError"
-          );
+          throw new Error(`File uploads post processing failed: ${err.message}`);
         }
 
         next();

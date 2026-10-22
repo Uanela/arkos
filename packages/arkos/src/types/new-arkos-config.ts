@@ -490,6 +490,17 @@ export type ArkosConfig = {
      */
     baseRoute?: string;
     /**
+     * Controls how uploaded files are served.
+     *
+     * - `"all"`: serves every directory under `baseUploadDir` (default, backwards compatible).
+     * - `"registered"`: serves only `images`, `videos`, `documents` and `files`.
+     *   Any other directory must be registered with `arkos.serveUploadDir()`.
+     *
+     * @default "all"
+     * @since 1.8.0-rc
+     */
+    serving?: "all" | "registered";
+    /**
      * Defines options for `express.static(somePath, someOptions)`
      *
      * #### Default:
@@ -1003,6 +1014,18 @@ export type ArkosConfig = {
    * @since 1.5.10-beta
    */
   warnings?: {
+    /**
+     * File upload related warning controls.
+     *
+     * @since 1.8.0-rc
+     */
+    fileUpload?: {
+      /**
+       * Suppresses the startup warning about URL parameters that are not used
+       * by the disk folder template.
+       */
+      suppressUnusedUrlParams?: boolean;
+    };
     /**
      * Suppresses specific warning messages.
      */

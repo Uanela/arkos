@@ -10,7 +10,6 @@ import {
   ArkosResponse,
 } from "../../../../types";
 import { fullCleanCwd } from "../../../../utils/helpers/fs.helpers";
-import AppError from "../../../error-handler/utils/app-error";
 
 export function adjustRequestUrl(
   req: ArkosRequest,
@@ -199,7 +198,7 @@ export const processImage = async (
   } catch (error: any) {
     if (error.message === "Input file contains unsupported image format")
       return processFile(req, filePath);
-    next(new AppError(error.message, 400, "CannotProcessImage", { error }));
+    next(new Error(`Cannot process uploaded image: ${error.message}`));
     return null;
   }
 };

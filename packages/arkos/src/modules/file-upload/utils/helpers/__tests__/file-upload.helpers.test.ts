@@ -267,7 +267,9 @@ describe("File Upload Helpers", () => {
 
       expect(result).toBe(null);
       expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({ message: "Image failed" })
+        expect.objectContaining({
+          message: "Cannot process uploaded image: Image failed",
+        })
       );
     });
 
