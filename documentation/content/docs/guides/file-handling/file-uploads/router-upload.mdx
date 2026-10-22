@@ -34,7 +34,7 @@ reportsRouter.post(
       uploads: {
         type: "single",
         field: "reportFile",
-        uploadDir: "reports",
+        uploadDir: "/reports",
         maxSize: 50 * 1024 * 1024,
         allowedFileTypes: [".xlsx", ".csv", ".pdf"],
         deleteOnError: true,
@@ -62,7 +62,7 @@ export const hook: RouteHook = {
       uploads: {
         type: "single",
         field: "profilePhoto",
-        uploadDir: "user-profiles",
+        uploadDir: "/user-profiles",
         maxSize: 5 * 1024 * 1024,
         allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
         deleteOnError: true,
@@ -74,7 +74,7 @@ export const hook: RouteHook = {
       uploads: {
         type: "single",
         field: "profilePhoto",
-        uploadDir: "user-profiles",
+        uploadDir: "/user-profiles",
         required: false,
       },
     },
@@ -110,7 +110,7 @@ galleryRouter.post(
         type: "array",
         field: "photos",
         maxCount: 12,
-        uploadDir: "gallery",
+        uploadDir: "/gallery",
         deleteOnError: true,
       },
     },
@@ -137,7 +137,7 @@ export const hook: RouteHook = {
         type: "array",
         field: "images",
         maxCount: 8,
-        uploadDir: "product-images",
+        uploadDir: "/product-images",
         deleteOnError: true,
       },
     },
@@ -176,7 +176,7 @@ listingsRouter.post(
           { name: "gallery", maxCount: 6 },
           { name: "floorPlan", maxCount: 1 },
         ],
-        uploadDir: "listings",
+        uploadDir: "/listings",
         deleteOnError: true,
       },
     },
@@ -202,7 +202,7 @@ fields: [
 { name: "gallery", maxCount: 6 },
 { name: "manual", maxCount: 1 },
 ],
-uploadDir: "products",
+uploadDir: "/products",
 deleteOnError: true,
 },
 },
@@ -230,12 +230,62 @@ experimental: {
   uploads: {
     type: "single",
     field: "profile[photo]",
-    uploadDir: "user-profiles",
+    uploadDir: "/user-profiles",
   },
 },
 ````
 
 The file path lands at `req.body.profile.photo`.
+
+## Dynamic folders and per-file names
+
+> Available from v1.8.0-rc
+
+`prepare` resolves disk-folder params on the write side. It is a plain function, may be async, and returns `{ dirParams }`:
+
+```ts
+experimental: {
+  uploads: {
+    type: "single",
+    field: "avatar",
+    uploadDir: "/users/:userId/avatar",
+    urlPath: "/users/:userId/avatar",
+    prepare: (req) => ({ dirParams: { userId: req.user.id } }),
+  },
+},
+```
+
+Disk params come from `{ ...req.params, ...prepare.dirParams }`, with `prepare` winning. Every dynamic `uploadDir` requires `prepare`; startup fails without it.
+
+Import `UploadPrepare`, `UploadPrepareFile`, `UploadDirParams`, `UploadUrlPath`, and `PrepareFileContext` from `arkos/file-upload` when you need to type these callbacks explicitly.
+
+`prepareFile` runs once per file and can rename it:
+
+```ts
+experimental: {
+  uploads: {
+    type: "array",
+    field: "photos",
+    uploadDir: "/users/:userId/photos",
+    prepare: (req) => ({ dirParams: { userId: req.user.id } }),
+    prepareFile: ({ file, dirParams, index }) => ({
+      filename: `photo-${dirParams.userId}-${index}`,
+    }),
+  },
+},
+```
+
+It receives `{ file, dirParams, index }`, `req`, and `res.locals`. Only `filename` is consumed today. The returned value is a base name: the original upload's extension is always preserved, and image optimization may change the final format. Invalid names are rejected.
+
+Overwriting an existing file is the default. Set `overwrite: false` to fail with `409 Conflict` instead. Two files in one request that target the same path also fail with `409 Conflict`, and every file written by that request is deleted.
+
+An exact `urlPath` is a complete public path, relative to `baseRoute`, with no stored file name appended:
+
+```ts
+urlPath: { exact: "/users/me/avatar" }
+```
+
+Exact URLs must be static and cannot be used with `type: "array"`. On `fields` uploads, each exact path must be unique. See [File Level Access Control](/docs/core-concepts/authentication/advanced/file-level-access-control#serving-a-single-file-exact-urls) for serving exact URLs.
 
 ## `experimental.uploads` reference
 
@@ -246,12 +296,19 @@ The file path lands at `req.body.profile.photo`.
 | `fields`           | `Array<{ name: string; maxCount: number }>` | For `fields`           | —                    | Per-field config                                 |
 | `required`         | `boolean`                                   | —                      | `true`               | Mark file as optional with `false`               |
 | `uploadDir`        | `string`                                    | —                      | Auto by MIME         | Subdirectory inside `baseUploadDir`              |
+| `urlPath`          | `string \| { exact: string }`               | —                      | `/${uploadDir}`      | Public URL folder relative to `baseRoute`, or an exact static URL. Requires `uploadDir`. |
+| `serve`            | `boolean`                                   | —                      | —                    | Set to `false` to opt out of the `"registered"` serving check. |
+| `prepare`          | `UploadPrepare`                             | For dynamic `uploadDir` | —                    | Resolves `{ dirParams }` for disk folder params. May be async. |
+| `prepareFile`      | `UploadPrepareFile`                         | —                      | —                    | Per-file preparation. Returns `{ filename }` (base name; extension preserved). May be async. |
+| `overwrite`        | `boolean`                                   | —                      | `true`               | Set to `false` to fail with `409 Conflict` when the target exists. |
 | `maxSize`          | `number`                                    | —                      | From global config   | Per-file size limit in bytes                     |
 | `maxCount`         | `number`                                    | For `array`            | —                    | Max number of files                              |
 | `allowedFileTypes` | `string[] \| RegExp`                        | —                      | From global config   | Allowed extensions or pattern                    |
 | `attachToBody`     | `"pathname" \| "url" \| "file" \| false`    | —                      | `"pathname"`         | How the file reference is attached to `req.body` |
 | `deleteOnError`    | `boolean`                                   | —                      | `true`               | Delete uploaded files if the request fails       |
 | `image`            | `object`                                    | —                      | `{ format: "webp" }` | Sharp image optimization (see below)             |
+
+`urlPath` and `serve` are available from v1.8.0-rc. On `fields` uploads they can be set per field, overriding the route-level value. See [File Level Access Control](/docs/core-concepts/authentication/advanced/file-level-access-control) for the serving modes, folder registration, and startup validation.
 
 ## Image optimization (new)
 

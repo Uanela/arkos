@@ -1,0 +1,212 @@
+---
+title: "How We Designed an Enterprise-Grade File Level Access Control"
+authors: [uanela]
+tags: [arkosjs, uploads, api-design, security]
+date: 2026-10-22
+description: Months of unrecorded thinking went into Arkos' upload serving API before two full days of brainstorming and API design. Here is how issue #159 became file level access control that works for a side project and a multitenant product.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+File uploads look like the easiest feature in a backend framework. Accept a file, put it on disk, return a path. Every framework has a ten-line example of exactly that.
+
+Then the application grows. The file belongs to a user. The user belongs to a tenant. Some files are public, some are private. A profile photo should live at `/users/me/avatar`, not at `/users/42/avatar/9f3c…webp`. An admin should be able to read every tenant's files. A signed URL should grant access without a login. And none of those rules should require the developer to reimplement the framework's authentication, authorization, and validation just to serve a PDF.
+
+That gap between the ten-line example and the real application is where issue #159 started.
+
+## The issue behind the feature
+
+Issue #159 was not "add uploads." Arkos already had uploads. The problem was serving them: uploaded folders lived on disk, but making them reachable over HTTP was either all-or-nothing or app-owned plumbing.
+
+The first instinct was small and tempting: put an `authentication` option on the serving helper and an `authorize` callback next to it. Mount a folder, pass a permission, done. It reads well in a demo. It stops reading well the moment you need the *folder path itself* to depend on the request.
+
+Consider a folder like `tenants/:tenantId/files`. The URL says `tenantId`, but the disk folder must come from something the caller cannot control — a membership lookup, a database record, a signed grant. If the framework resolves that folder from `req.params`, then changing the URL is enough to change the folder. That is not authorization. That is a directory traversal with extra steps.
+
+So the design moved: authentication belongs to the router mount, exactly like every other Arkos route, and a plain `prepare` function resolves the disk folder. Authorization happens in the same place the folder is decided, because in a dynamic folder those are the same decision.
+
+```ts
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/tenants/:tenantId/files", {
+    urlPath: "/tenants/:tenantId/files",
+    prepare: async (req) => {
+      const membership = await tenantMembers.find(
+        req.user.id,
+        req.params.tenantId
+      );
+
+      if (!membership)
+        throw new AppError("Access denied", 403, "Forbidden");
+
+      return { dirParams: { tenantId: membership.tenantId } };
+    },
+  })
+);
+```
+
+`prepare` is a plain function, not an Express middleware. It receives the request and `res.locals`, it may be async, and it throws to deny. It is the only source of disk-folder params. There is no fallback to `req.params`. Ever.
+
+That last sentence was one of the few decisions nobody argued about twice.
+
+## The DSL argument
+
+The hard part was not security. It was deciding how much API to add.
+
+Every feature can be solved by adding a keyword. A `public: true` here, an `exact: true` there, a `filenamePattern` for the third case. Do that for a year and the configuration object becomes a programming language with worse error messages.
+
+None of that thinking was recorded. It was months of the maintainer trying shapes, rejecting them, and chasing the right developer experience and dependency-injection boundary alone. Only once the idea consolidated did it become two full days of brainstorming and designing the API — still before any implementation code was written. The question was always the same: *what does the developer have to write manually if we do not add this, and does the DSL save enough to justify learning it?*
+
+The answer changed by scale.
+
+### Rung one: the small app
+
+A side project has a `public` folder and a `private` folder. It needs one permission check and one way to turn a folder on.
+
+```ts
+router.use(
+  { authentication: false },
+  arkos.serveUploadDir("/public/banners", { urlPath: "/banners" })
+);
+
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/storage/acme", { urlPath: "/private/files" })
+);
+```
+
+That is the whole API for the simple case. `serveUploadDir()` adds no authentication by itself; the mount config is the gate. Public means `authentication: false` — explicit, greppable, and impossible to mistake for "the framework forgot to check."
+
+For small apps, `fileUpload.serving: "all"` still works: every folder under `baseUploadDir` is reachable. But `create-arkos` now scaffolds `"registered"`, where only the built-in roots and explicitly registered folders are served. The default should fail closed as an app grows, even if the app never reads the setting.
+
+### Rung two: the mid-sized app
+
+The first real complication is almost always per-user folders.
+
+```ts
+router.use(
+  { authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/users/:userId/avatar/:fileName", {
+    urlPath: "/users/me/avatar",
+    prepare: (req) => ({
+      dirParams: {
+        userId: req.user.id,
+        fileName: "profile.webp",
+      },
+    }),
+  })
+);
+```
+
+The URL is static: `/users/me/avatar`. The disk path is dynamic. Arkos resolves `dir`; if it is a file, it serves that file. If it is a directory, the remainder of the URL is appended and served from it. `recursive` controls whether nested paths are allowed, and it defaults to `false` — direct files only.
+
+This is also the answer to "why is there no `exact` option on the serve side?" Because the resolved path already tells the framework which mode it is in. A file is a file. A directory is a directory. Adding a boolean to say what the filesystem already knows would be API for the sake of symmetry.
+
+### Rung three: the large app
+
+Large applications bring the details that demos skip: deterministic file names, replacement semantics, collisions, and a startup that refuses to boot with a folder nobody can read.
+
+On the write side, `prepareFile` runs once per file:
+
+```ts
+uploads: {
+  type: "array",
+  field: "photos",
+  uploadDir: "/users/:userId/photos",
+  prepare: (req) => ({ dirParams: { userId: req.user.id } }),
+  prepareFile: ({ file, dirParams, index }) => ({
+    filename: `photo-${dirParams.userId}-${index}`,
+  }),
+}
+```
+
+It receives the original file, the resolved `dirParams`, and the file's index; it may be async. Only `filename` is consumed today. The returned value is a **base name**: the original upload's extension is always preserved. If image optimization changes the format, the final format wins. That rule exists because the alternative — trusting an extension returned by application code — is how you end up with a `.webp` that is actually a JPEG.
+
+Replacing an existing file is the default. `overwrite: false` turns that into a `409 Conflict`. Two files in one request that resolve to the same target path also fail with `409`, and every file written by that request is deleted before the error is returned. Partial writes after a conflict are worse than no writes.
+
+The write URL has two forms:
+
+```ts
+// Folder URL: the stored file name is appended
+urlPath: "/private/files"
+
+// Exact URL: nothing is appended
+urlPath: { exact: "/users/me/avatar" }
+```
+
+Exact URLs are static, unique per field, and cannot be used with `type: "array"` — an array would give every file the same URL. They also bypass folder-coverage validation, because they are not folder URLs. If a file is intentionally never served, you say so:
+
+```ts
+uploads: {
+  type: "single",
+  field: "document",
+  uploadDir: "/private/contracts",
+  serve: false,
+}
+```
+
+In `"registered"` mode, a folder that is neither served nor marked `serve: false` fails at startup. That is deliberate. A file you can write but can never read is not a feature; it is a bug with a happy path.
+
+## What we refused to add
+
+The months of iteration and the final two-day design sprint produced as many rejected features as shipped ones.
+
+- **No `authorize` callback inside `serveUploadDir()`.** Authorization is one `router.use()` away, and keeping it there means rate limiting, validation, and the rest of the middleware stack still apply. Reimplementing that inside a helper would be a second, worse router.
+- **No fallback to `req.params` for disk paths.** If `prepare` omits a param, the request fails. It does not quietly use the URL value.
+- **No dynamic exact URLs.** `urlPath: { exact: "/users/:id/avatar" }` is a folder URL pretending to be exact. It was rejected.
+- **No matching rule between `prepare` values and path params.** On the serve side, path params are routing. `prepare` is the source of truth. Checking that they are equal sounds safe until a legitimate use case needs a disk segment that is not in the URL.
+- **No `exact` switch on the serve side.** The resolved path decides.
+
+The pattern is consistent: when the framework can derive a behavior from something it already knows, it should not ask the developer to restate it.
+
+## Failure is a design surface
+
+The most underrated part of uploads is what happens when something is wrong.
+
+Startup validation fails closed. Dynamic folders require `prepare` on both the serve and write sides. Write and serve directory templates must match structurally, including identical param names. URLs and directories must be unique. Built-in roots cannot be registered twice while `findFile` is enabled. These are not runtime surprises; they are boot failures with a description.
+
+At runtime, the error split is deliberate. Caller mistakes — missing fields, disallowed file types, duplicate targets, disabled overwrites — return an `AppError` with a message the caller can act on. Internal or configuration problems — an unsafe resolved directory param, an invalid `prepareFile` name, an image-processing failure — throw a plain `Error`. Arkos logs the description; the API caller receives a generic internal-server error.
+
+The caller never needed to know which directory the server was trying to open. Telling them was both a leak and useless.
+
+There is one warning worth calling out because it is not an error: a URL param that the disk template never uses. It is allowed, and it logs at startup unless suppressed:
+
+```ts
+export default {
+  warnings: {
+    fileUpload: {
+      suppressUnusedUrlParams: true,
+    },
+  },
+} satisfies ArkosConfig;
+```
+
+Warnings are terminal output. An editor-level diagnostic would be nicer, but a startup warning that names the route is honest about when it can actually know.
+
+## Why file level, not folder level
+
+The documentation page for this feature was already stubbed as **Folder-Level Access Control** long before the API existed. We renamed it to **File Level Access Control** before shipping.
+
+The old name was accurate in the way an implementation is accurate: most of these rules attach to folders, and `serveUploadDir()` talks about directories. The new name is accurate in the way a user is accurate: developers are trying to control who can read a file. "File level" is easier to understand, easier to search for, and easier to explain to someone who has never read the docs.
+
+The distinction matters because naming is part of the API. "Folder-level access control" sounds like an advanced filesystem topic. "File level access control" sounds like the thing every application needs. Under the hood, nothing changed: you still register folders, still resolve folder paths, and still protect the files inside them.
+
+## The ladder, summarized
+
+| Scale | What you write | What the DSL buys |
+| ----- | -------------- | ----------------- |
+| Small app | `serveUploadDir("/public/banners", { urlPath: "/banners" })` | Explicit public/private switch, no custom static plumbing |
+| Mid-sized app | Add `prepare` for dynamic folders | Per-user and per-tenant paths without trusting the URL |
+| Large app | Add `prepareFile`, `overwrite`, exact URLs, `serve: false` | Deterministic names, conflict safety, startup guarantees |
+| Enterprise | Fine-grained policies inside `prepare`, signed URLs, custom sessions | Authorization and path resolution in one place, no second auth system |
+
+The ladder only works if each rung is optional. A small app should not need to understand `dirParams` to serve a logo. A large app should not need to fork the framework to enforce tenant isolation.
+
+And there is one case where the ladder stops: if files live in S3, R2, or a CDN, this system is not competing with it. It serves local disk, securely, with the same authorization primitives as the rest of Arkos. Use it when local disk is the right answer — not because it can pretend to be an object store.
+
+## Shipped in `v1.8.0-rc`
+
+Issue #159 took months of thinking and two full days of design to produce an API that looks obvious in hindsight. That is usually the sign that the work was worth doing.
+
+Folder registration, mount-level authorization, `prepare`, `prepareFile`, exact URLs, overwrite and conflict semantics, startup validation, and the `arkos/file-upload` types are available in `v1.8.0-rc`.
+
+Start with the smallest rung. Add the next one when the application asks for it — not before.

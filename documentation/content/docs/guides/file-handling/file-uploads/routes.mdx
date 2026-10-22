@@ -9,16 +9,26 @@ Arkos automatically exposes dedicated routes for standalone file operations. The
 
 | Method | Endpoint | Description | Operation |
 |--------|----------|-------------|-----------|
-| GET | `/api/uploads/:fileType/:fileName` | Serve/retrieve a file | `findFile` |
+| GET | `/api/uploads/:path` | Serve/retrieve a file | `findFile` |
 | POST | `/api/uploads/:fileType` | Upload files | `uploadFile` |
 | PATCH | `/api/uploads/:fileType/:fileName` | Replace an existing file | `updateFile` |
 | DELETE | `/api/uploads/:fileType/:fileName` | Delete a file | `deleteFile` |
 
-`:fileType` accepts: `images`, `videos`, `documents`, or `files`.
+`:fileType` accepts: `images`, `videos`, `documents`, or `files`. In update and delete, `:fileName` may contain subdirectories, for example `documents/contracts/2026/agreement.pdf`.
+
+`GET` only serves folders enabled by [`fileUpload.serving`](#serving-uploaded-files); uploads, updates, and deletes are unaffected by that setting.
 
 <Callout type="info">
   `/api/uploads` is the default base route and can be customized in your config. See [File Upload Setup](/docs/guides/file-handling/file-uploads/setup) for details.
 </Callout>
+
+## Serving uploaded files
+
+> Available from v1.8.0-rc
+
+`GET` serves folders allowed by `fileUpload.serving`: `"all"` serves every folder under `baseUploadDir`, while `"registered"` serves only the built-in `images`, `videos`, `documents`, and `files` roots plus folders registered with `arkos.serveUploadDir()`. `create-arkos` scaffolds `"registered"` so custom upload folders are not exposed by accident.
+
+For folder registration, mount-level authentication and authorization, `prepare`, dynamic tenant folders, exact file URLs, and startup validation, see [File Level Access Control](/docs/core-concepts/authentication/advanced/file-level-access-control).
 
 ## Two approaches to file uploads
 
@@ -96,7 +106,7 @@ Available hooks: `beforeUploadFile`, `afterUploadFile`, `beforeUpdateFile`, `aft
 GET /api/uploads/images/1234567890-photo.jpg
 ```
 
-Response: The file is served directly as a static asset.
+Response: The file is served directly as a static asset. The folder must be enabled by [`fileUpload.serving`](#serving-uploaded-files); otherwise the request returns `404`.
 
 ### Upload a file
 
@@ -229,6 +239,7 @@ export default defineConfig({
   fileUpload: {
     baseUploadDir: "/uploads",
     baseRoute: "/api/uploads",
+    serving: "registered",
     expressStatic: {
       maxAge: "1d",
     },
@@ -291,7 +302,9 @@ arkos.init({
 
 ## Related
 
-- [Router Upload](/docs/guides/file-handling/file-uploads/router-upload) — attaching uploads to custom and built-in routes
+- [File Upload Setup](/docs/guides/file-handling/file-uploads/setup) — global configuration and defaults
+- [Router Upload](/docs/guides/file-handling/file-uploads/router-upload) — attaching uploads to custom and built-in routes, `uploadDir`, `urlPath`, and `serve`
+- [File Level Access Control](/docs/core-concepts/authentication/advanced/file-level-access-control) — serving modes, folder registration, mount-level authorization, and `prepare`
 - [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for any file operation
 - [File Upload Services](/docs/reference/file-upload-services) — programmatic file operations inside controllers and services
 - [Validation with file uploads](/docs/guides/validation/usage#validation-with-file-uploads) — how to combine `validation.body` and `experimental.uploads` in the same request
