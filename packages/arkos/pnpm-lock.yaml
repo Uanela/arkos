@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  style-to-js: 1.1.16
-
 importers:
 
   .:
@@ -2493,7 +2490,6 @@ packages:
 
   concat-stream@2.0.0:
     resolution: {integrity: sha512-MWufYdFw53ccGjCA+Ol7XJYpAlW6/prSMzuPOTRnJGcGzuhLn4Scrz7qf6o8bROZ514ltazcIFJZevcfbo0x7A==}
-    engines: {'0': node >= 6.0}
 
   confbox@0.1.8:
     resolution: {integrity: sha512-RMtmw0iFkeR4YV+fUOSucriAQNb9g8zFR52MWCtl+cCZOFRNL6zeB395vPzFhEjjn4fMxXudmELnl/KF/WrK6w==}
@@ -5790,80 +5786,106 @@ snapshots:
   '@img/sharp-darwin-arm64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-darwin-arm64': 1.3.2
+    optional: true
 
   '@img/sharp-darwin-x64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-darwin-x64': 1.3.2
+    optional: true
 
   '@img/sharp-freebsd-wasm32@0.35.3':
     dependencies:
       '@img/sharp-wasm32': 0.35.3
+    optional: true
 
-  '@img/sharp-libvips-darwin-arm64@1.3.2': {}
+  '@img/sharp-libvips-darwin-arm64@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-darwin-x64@1.3.2': {}
+  '@img/sharp-libvips-darwin-x64@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linux-arm64@1.3.2': {}
+  '@img/sharp-libvips-linux-arm64@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linux-arm@1.3.2': {}
+  '@img/sharp-libvips-linux-arm@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linux-ppc64@1.3.2': {}
+  '@img/sharp-libvips-linux-ppc64@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linux-riscv64@1.3.2': {}
+  '@img/sharp-libvips-linux-riscv64@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linux-s390x@1.3.2': {}
+  '@img/sharp-libvips-linux-s390x@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linux-x64@1.3.2': {}
+  '@img/sharp-libvips-linux-x64@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linuxmusl-arm64@1.3.2': {}
+  '@img/sharp-libvips-linuxmusl-arm64@1.3.2':
+    optional: true
 
-  '@img/sharp-libvips-linuxmusl-x64@1.3.2': {}
+  '@img/sharp-libvips-linuxmusl-x64@1.3.2':
+    optional: true
 
   '@img/sharp-linux-arm64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linux-arm64': 1.3.2
+    optional: true
 
   '@img/sharp-linux-arm@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linux-arm': 1.3.2
+    optional: true
 
   '@img/sharp-linux-ppc64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linux-ppc64': 1.3.2
+    optional: true
 
   '@img/sharp-linux-riscv64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linux-riscv64': 1.3.2
+    optional: true
 
   '@img/sharp-linux-s390x@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linux-s390x': 1.3.2
+    optional: true
 
   '@img/sharp-linux-x64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linux-x64': 1.3.2
+    optional: true
 
   '@img/sharp-linuxmusl-arm64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linuxmusl-arm64': 1.3.2
+    optional: true
 
   '@img/sharp-linuxmusl-x64@0.35.3':
     optionalDependencies:
       '@img/sharp-libvips-linuxmusl-x64': 1.3.2
+    optional: true
 
   '@img/sharp-wasm32@0.35.3':
     dependencies:
       '@emnapi/runtime': 1.11.3
+    optional: true
 
   '@img/sharp-webcontainers-wasm32@0.35.3':
     dependencies:
       '@img/sharp-wasm32': 0.35.3
+    optional: true
 
-  '@img/sharp-win32-arm64@0.35.3': {}
+  '@img/sharp-win32-arm64@0.35.3':
+    optional: true
 
-  '@img/sharp-win32-ia32@0.35.3': {}
+  '@img/sharp-win32-ia32@0.35.3':
+    optional: true
 
-  '@img/sharp-win32-x64@0.35.3': {}
+  '@img/sharp-win32-x64@0.35.3':
+    optional: true
 
   '@internationalized/date@3.12.3':
     dependencies:
@@ -7071,7 +7093,8 @@ snapshots:
 
   '@types/swagger-jsdoc@6.0.4': {}
 
-  '@types/trusted-types@2.0.7': {}
+  '@types/trusted-types@2.0.7':
+    optional: true
 
   '@types/unist@3.0.3': {}
 
@@ -7745,7 +7768,8 @@ snapshots:
 
   commander@13.1.0: {}
 
-  commander@2.20.3: {}
+  commander@2.20.3:
+    optional: true
 
   commander@6.2.0: {}
 
