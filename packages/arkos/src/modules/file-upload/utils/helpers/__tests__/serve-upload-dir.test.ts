@@ -92,8 +92,16 @@ describe("serveUploadDir", () => {
     expect(() => serveUploadDir("storage/acme", { urlPath: "/" })).toThrow();
   });
 
-  it("rejects absolute and traversing directories", () => {
-    expect(() => serveUploadDir("/storage/acme")).toThrow();
+  it("normalizes a leading slash instead of rejecting it", () => {
+    serveUploadDir("/storage/acme");
+
+    expect(uploadServingRegistry.getServeRegistrations()[0].dir).toBe(
+      "storage/acme"
+    );
+    expect(getFolderRouteArgs()[0].path).toBe("/storage/acme/:fileName");
+  });
+
+  it("rejects traversing directories", () => {
     expect(() => serveUploadDir("../storage/acme")).toThrow();
   });
 

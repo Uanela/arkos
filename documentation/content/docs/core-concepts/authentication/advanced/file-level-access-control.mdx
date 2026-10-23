@@ -323,7 +323,7 @@ The exact string is the complete public path relative to `baseRoute`; the stored
 
 Disk params are resolved from `{ ...req.params, ...prepare.dirParams }`, with `prepare` winning. Both `uploadDir` and a string `urlPath` are built from that same map, so the returned URL always points at the folder that was actually written.
 
-In `"registered"` mode, Arkos validates at startup that a folder URL is covered by a built-in root or a `serveUploadDir()` registration whose params can be filled. If files are intentionally never served over HTTP, opt out explicitly:
+In `"registered"` mode, Arkos validates at startup that a folder URL is covered by a built-in root or a `serveUploadDir()` registration whose params can be filled. A parent folder registered with `recursive: true` covers its nested folders too. If files are intentionally never served over HTTP, opt out explicitly:
 
 ```ts
 experimental: {
@@ -343,7 +343,7 @@ In `"registered"` mode, an upload folder that is neither served nor marked `serv
 Arkos fails closed at startup when registrations are unsafe or contradictory:
 
 - Every dynamic folder — on the serve side and the write side — requires `prepare`.
-- A write folder must be covered by a serve registration, or be marked `serve: false`.
+- A write folder must be covered by a serve registration — the exact folder, or a parent registered with `recursive: true` — or be marked `serve: false`.
 - Write and serve directory templates must match structurally, including identical param names.
 - Served URL paths and directories must be unique.
 - Built-in upload roots cannot be registered twice while `findFile` is enabled.

@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import ExitError from "../../../../utils/helpers/exit-error";
 
 export const DEFAULT_UPLOAD_DIRS = [
   "images",
@@ -33,26 +32,26 @@ export function assertSafeUploadPath(
   const label = options.label || "upload path";
 
   if (typeof value !== "string" || value.length === 0)
-    throw ExitError(`Invalid ${label}: it must be a non-empty string.`);
+    throw new Error(`Invalid ${label}: it must be a non-empty string.`);
 
   if (path.isAbsolute(value))
-    throw ExitError(
+    throw new Error(
       `Invalid ${label} "${value}": absolute paths are not allowed.`
     );
 
   if (value.includes("\\") || value.includes("\0"))
-    throw ExitError(
+    throw new Error(
       `Invalid ${label} "${value}": backslashes and null bytes are not allowed.`
     );
 
   for (const segment of value.split("/")) {
     if (!segment || segment === "." || segment === "..")
-      throw ExitError(
+      throw new Error(
         `Invalid ${label} "${value}": empty, "." and ".." segments are not allowed.`
       );
 
     if (!isSafeUploadSegment(segment, options.allowParams))
-      throw ExitError(
+      throw new Error(
         `Invalid ${label} "${value}": segment "${segment}" is not allowed. Use letters, numbers, ".", "_" and "-".`
       );
   }

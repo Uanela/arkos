@@ -9,7 +9,6 @@ import { IArkosRouter } from "../../../../utils/arkos-router/types";
 import { extractPathParams } from "../../../../utils/arkos-router/utils/helpers";
 import { getArkosConfig } from "../../../../server";
 import deepmerge from "../../../../utils/helpers/deepmerge.helper";
-import ExitError from "../../../../utils/helpers/exit-error";
 import {
   assertSafeUploadPath,
   isRealPathInside,
@@ -150,11 +149,6 @@ export function serveUploadDir(
   dir: string,
   options: ServeUploadDirOptions = {}
 ): IArkosRouter {
-  if (path.isAbsolute(dir))
-    throw ExitError(
-      `Invalid upload directory "${dir}": absolute paths are not allowed.`
-    );
-
   const normalizedDir = normalizeUploadDir(dir);
 
   assertSafeUploadPath(normalizedDir, {
@@ -167,7 +161,7 @@ export function serveUploadDir(
   );
 
   if (mountPath === "/")
-    throw ExitError(
+    throw new Error(
       `Invalid upload URL path "/" for upload directory "${normalizedDir}": it must contain at least one segment.`
     );
 
@@ -177,7 +171,7 @@ export function serveUploadDir(
   });
 
   if (options.prepare !== undefined && typeof options.prepare !== "function")
-    throw ExitError(
+    throw new Error(
       `Invalid prepare function for upload directory "${normalizedDir}": expected a function.`
     );
 
@@ -185,7 +179,7 @@ export function serveUploadDir(
   const pathParams = extractPathParams(mountPath);
 
   if (dirParams.length > 0 && !options.prepare)
-    throw ExitError(
+    throw new Error(
       `Dynamic upload directory "${normalizedDir}" requires a prepare function.`
     );
 

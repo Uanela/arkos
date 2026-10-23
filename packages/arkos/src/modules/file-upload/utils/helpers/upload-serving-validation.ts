@@ -1,4 +1,3 @@
-import ExitError from "../../../../utils/helpers/exit-error";
 import sheu from "../../../../utils/sheu";
 import { getArkosConfig } from "../../../../server";
 import { extractPathParams } from "../../../../utils/arkos-router/utils/helpers";
@@ -48,7 +47,7 @@ function assertUrlPathIsRelativeToBaseRoute(
     urlPath === normalizedBaseRoute ||
     urlPath.startsWith(`${normalizedBaseRoute}/`)
   )
-    throw ExitError(
+    throw new Error(
       `Invalid urlPath "${urlPath}" on route "${route}": it is relative to baseRoute and must not include "${normalizedBaseRoute}".`
     );
 }
@@ -85,6 +84,7 @@ function matchDirTemplates(
     if (serveSegment.startsWith(":")) {
       if (writeSegment.startsWith(":")) {
         if (serveSegment.slice(1) !== writeSegment.slice(1)) return null;
+        params[serveSegment.slice(1)] = serveSegment;
       } else params[serveSegment.slice(1)] = writeSegment;
     } else if (serveSegment !== writeSegment) return null;
   }
@@ -105,7 +105,7 @@ function validateWriteUrlPath(
   if (urlPath === undefined) return;
 
   if (!dir)
-    throw ExitError(
+    throw new Error(
       `Route "${route}" declares urlPath but does not declare uploadDir.`
     );
 
@@ -113,17 +113,17 @@ function validateWriteUrlPath(
     const exact = urlPath.exact;
 
     if (typeof exact !== "string" || !exact.startsWith("/"))
-      throw ExitError(
+      throw new Error(
         `Invalid exact urlPath on route "${route}": it must be a string starting with "/".`
       );
 
     if (exact.length > 1 && exact.endsWith("/"))
-      throw ExitError(
+      throw new Error(
         `Invalid exact urlPath "${exact}" on route "${route}": it must not end with "/".`
       );
 
     if (exact === "/")
-      throw ExitError(
+      throw new Error(
         `Invalid exact urlPath "/" on route "${route}": it must contain at least one segment.`
       );
 
@@ -134,7 +134,7 @@ function validateWriteUrlPath(
     assertUrlPathIsRelativeToBaseRoute(exact, baseRoute, route);
 
     if (registration.type === "array")
-      throw ExitError(
+      throw new Error(
         `Exact urlPath "${exact}" on route "${route}" cannot be used with array uploads because every file would share the same URL.`
       );
 
@@ -142,12 +142,12 @@ function validateWriteUrlPath(
   }
 
   if (!urlPath.startsWith("/"))
-    throw ExitError(
+    throw new Error(
       `Invalid urlPath "${urlPath}" on route "${route}": it must start with "/".`
     );
 
   if (urlPath.endsWith("/"))
-    throw ExitError(
+    throw new Error(
       `Invalid urlPath "${urlPath}" on route "${route}": it must not end with "/".`
     );
 
@@ -207,7 +207,7 @@ export function validateUploadServingConfig() {
     const firstPathSegment = publicPath.replace(/^\//, "").split("/")[0];
 
     if (registration.dynamic && !registration.hasPrepare)
-      throw ExitError(
+      throw new Error(
         `Dynamic upload directory "${dir}" requires a prepare function.`
       );
 
@@ -229,7 +229,7 @@ export function validateUploadServingConfig() {
       findFileEnabled &&
       (DEFAULT_UPLOAD_DIRS as readonly string[]).includes(firstDirSegment)
     )
-      throw ExitError(
+      throw new Error(
         `Cannot serve upload directory "${dir}" with arkos.serveUploadDir(): "${firstDirSegment}" is a built-in upload root and is always served while findFile is enabled.`
       );
 
@@ -237,19 +237,19 @@ export function validateUploadServingConfig() {
       findFileEnabled &&
       (DEFAULT_UPLOAD_DIRS as readonly string[]).includes(firstPathSegment)
     )
-      throw ExitError(
+      throw new Error(
         `Cannot register upload URL path "${publicPath}": "/${firstPathSegment}" is a built-in upload root and is always served while findFile is enabled.`
       );
 
     if (seenServePaths.has(publicPath))
-      throw ExitError(
+      throw new Error(
         `Duplicate upload serving path "${publicPath}" registered with arkos.serveUploadDir().`
       );
 
     seenServePaths.set(publicPath, dir);
 
     if (seenServeDirs.has(dir))
-      throw ExitError(
+      throw new Error(
         seenServeDirs.get(dir) === publicPath
           ? `Duplicate arkos.serveUploadDir() registration for "${dir}".`
           : `Upload directory "${dir}" is served at multiple paths: "${seenServeDirs.get(
@@ -276,7 +276,7 @@ export function validateUploadServingConfig() {
     const dirParams = extractPathParams(`/${dir}`);
 
     if (dirParams.length > 0 && !registration.hasPrepare)
-      throw ExitError(
+      throw new Error(
         `Dynamic upload directory "${dir}" on route "${registration.route}" requires a prepare function.`
       );
 
@@ -301,7 +301,7 @@ export function validateUploadServingConfig() {
       const exact = registration.urlPath.exact;
 
       if (seenExactWritePaths.has(exact))
-        throw ExitError(
+        throw new Error(
           `Duplicate exact urlPath "${exact}" on route "${registration.route}"; it is already used on route "${seenExactWritePaths.get(
             exact
           )}".`
@@ -356,14 +356,14 @@ export function validateUploadServingConfig() {
         normalizeUploadUrlPath(serveRegistration.urlPath) !==
           normalizeUploadUrlPath(bestMatch.registration.urlPath)
       )
-        throw ExitError(
+        throw new Error(
           `Upload directory "${dir}" on route "${registration.route}" is ambiguously served by "${bestMatch.registration.urlPath}" and "${serveRegistration.urlPath}".`
         );
     }
 
     if (!bestMatch)
-      throw ExitError(
-        `Upload directory "${dir}" used by route "${registration.route}" is not served. Register it with arkos.serveUploadDir("${dir}") or set uploads.serve = false.`
+      throw new Error(
+        `Upload directory "${dir}" used by route "${registration.route}" is not served. Register it with arkos.serveUploadDir("${dir}"), register one of its parent folders with arkos.serveUploadDir(parent, { recursive: true }), or set "serve: false" in the route's uploads config.`
       );
 
     const servedPublicPath = normalizeUploadUrlPath(
@@ -375,7 +375,7 @@ export function validateUploadServingConfig() {
     );
 
     if (servedPublicPath !== writePublicPath)
-      throw ExitError(
+      throw new Error(
         `Generated URL "${writePublicPath}" does not match served URL "${servedPublicPath}" for upload directory "${dir}".`
       );
   }

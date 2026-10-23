@@ -154,6 +154,26 @@ describe("validateUploadServingConfig", () => {
     expect(() => validateUploadServingConfig()).toThrow();
   });
 
+  it("keeps param placeholders when the write dir shares the serve template", () => {
+    uploadServingRegistry.registerWrite({
+      dir: "conversations/:conversationId/images",
+      route: "/conversations/:conversationId",
+      hasPrepare: true,
+    });
+    uploadServingRegistry.registerServe(
+      serveRegistration({
+        dir: "conversations/:conversationId",
+        urlPath: "/conversations/:conversationId",
+        dirParams: ["conversationId"],
+        pathParams: ["conversationId"],
+        dynamic: true,
+        hasPrepare: true,
+      })
+    );
+
+    expect(() => validateUploadServingConfig()).not.toThrow();
+  });
+
   it("throws on duplicate serving paths", () => {
     uploadServingRegistry.registerServe(serveRegistration());
     uploadServingRegistry.registerServe(serveRegistration({ dir: "storage/other" }));
