@@ -215,6 +215,7 @@ export type ArkosRouteMethodHandler<T> = {
 
 export type UseMethodHandler<T> = IRouterHandler<T> &
   IRouterMatcher<T> & {
+    (config: ArkosUseConfig, router: IArkosRouter | Application): T;
     (
       config: ArkosUseConfig,
       ...handlers: Array<ArkosRequestHandler | Array<ArkosRequestHandler>>
