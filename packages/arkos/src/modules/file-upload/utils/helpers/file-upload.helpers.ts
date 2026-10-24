@@ -82,6 +82,8 @@ export const processFile = async (
  * strings from query parameters and are normalized internally.
  */
 export interface ImageOptimizationOptions {
+  /** Set to `false` to skip optimization and keep the original bytes as-is. */
+  optimize?: boolean;
   format?: string;
   quality?: number | string;
   width?: number | string;
@@ -126,6 +128,8 @@ export const optimizeImage = async (
   filePath: string,
   options: ImageOptimizationOptions = {},
 ): Promise<string> => {
+  if (options.optimize === false) return filePath;
+
   const ext = path.extname(filePath).toLowerCase();
   const outputFormat = (options.format || "webp").toLowerCase();
   const sharpFormat = outputFormat === "jpg" ? "jpeg" : outputFormat;

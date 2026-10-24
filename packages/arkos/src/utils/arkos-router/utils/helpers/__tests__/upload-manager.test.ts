@@ -681,6 +681,29 @@ describe("UploadManager", () => {
       );
     });
 
+    it("should pass optimize: false through to the optimizer", async () => {
+      (optimizeImage as jest.Mock).mockResolvedValue(
+        "/uploads/images/document-1.png"
+      );
+      const config = {
+        type: "single" as const,
+        field: "document",
+        image: { optimize: false },
+      } as any;
+      mockReq.file = {
+        path: "/uploads/images/document-1.png",
+        mimetype: "image/png",
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(optimizeImage).toHaveBeenCalledWith(
+        "/uploads/images/document-1.png",
+        { optimize: false }
+      );
+    });
+
     it("should use per-field image options for fields uploads", async () => {
       (optimizeImage as jest.Mock).mockImplementation((filePath: string) =>
         Promise.resolve(filePath.replace(/\.\w+$/, ".webp"))

@@ -286,8 +286,16 @@ export type ArkosRouterBaseUploadConfig = {
    * @example
    * image: { resizeTo: 1200, quality: 80 }
    * image: { format: "png", width: 800 }
+   * image: { optimize: false } // store original bytes untouched
    */
   image?: {
+    /**
+     * Set to `false` to skip optimization entirely and store the original
+     * bytes as-is, e.g. to let users upload an image "as a document".
+     *
+     * @default true
+     */
+    optimize?: boolean;
     /** Output format, defaults to `webp` */
     format?: string;
     /** Output quality (1-100) for lossy formats (webp, jpeg, avif) */
