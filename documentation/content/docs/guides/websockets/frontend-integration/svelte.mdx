@@ -2,6 +2,107 @@
 title: Svelte
 ---
 
-Under development! Track progress or contribute at [#258](https://github.com/Uanela/arkos/issues/258).
+`@arkosjs/svelte-websockets` is Svelte 5 bindings for `@arkosjs/websockets-client`. Runes-first, but every handle also implements the Svelte store contract, so it works in legacy (non-runes) components too.
 
-A starting-point implementation exists in the [contributing guide](https://github.com/Uanela/arkos/blob/feat/websockets-client/websockets-client/CONTRIBUTING_FRAMEWORK_BINDIND.md#svelte) but hasn't been tested in a real Svelte 5 app yet — it needs a Svelte user to validate it before it lands here as real docs.
+## Setup
+
+```bash
+npm install @arkosjs/svelte-websockets @arkosjs/websockets-client socket.io-client
+```
+
+```svelte
+<!-- App.svelte (or +layout.svelte) -->
+<script lang="ts">
+  import { Manager } from "socket.io-client";
+  import { ArkosProvider } from "@arkosjs/svelte-websockets";
+
+  let { children } = $props();
+
+  const manager = new Manager("http://localhost:3000", {
+    auth: { token: "your-auth-token" },
+  });
+</script>
+
+<ArkosProvider {manager}>
+  {@render children()}
+</ArkosProvider>
+```
+
+One provider near the root — every `useGateway()` call below it shares the same underlying `WebsocketClient`. Changing `manager` (e.g. after login with a new token) destroys the old client and creates a new one; children stay mounted.
+
+## `useGateway`
+
+One call per namespace:
+
+```svelte
+<script lang="ts">
+  import { useGateway } from "@arkosjs/svelte-websockets";
+
+  const chat = useGateway("/chat");
+  let messages = $state<{ text: string }[]>([]);
+
+  chat.on<{ text: string }>("receive_message", (data) => messages.push(data));
+</script>
+
+<p>{chat.status}</p>
+```
+
+- `chat.on(event, handler)` — subscribes, cleans up automatically on component destroy. Returns an `off()` function to unsubscribe earlier.
+- `chat.status` — reactive: `"connected" | "connecting" | "reconnecting" | "disconnected"`.
+- `chat.namespace` — the namespace currently in use.
+- `chat.raw` — the underlying `GatewayClient`, as an escape hatch.
+
+`namespace` can also be a getter, e.g. `() => "/rooms/" + room`, which re-subscribes everything (status, listeners, emitters) to the new gateway when `room` changes.
+
+## `useEmit`
+
+For events you emit from user actions, with loading/error state handled for you:
+
+```svelte
+<script lang="ts">
+  const chat = useGateway("/chat");
+  const sendMessage = chat.useEmit<{ text: string }>("send_message");
+</script>
+
+<button
+  onclick={() => sendMessage.emit({ text: "hello" }, { ack: true })}
+  disabled={sendMessage.loading}
+>
+  {sendMessage.loading ? "Sending..." : "Send"}
+</button>
+
+{#if sendMessage.error}<p style="color: red">{sendMessage.error}</p>{/if}
+```
+
+- `sendMessage.emit(data, options?)` — `{ ack: true }` waits for server acknowledgement and resolves to `{ success, data?, error? }`; omit it for fire-and-forget.
+- `sendMessage.loading` — reactive, `true` while an acked emit is in flight.
+- `sendMessage.error` — reactive, set if the emit fails or times out, cleared on the next emit.
+- `sendMessage.lastEmittedAt` — reactive timestamp of the last emit call.
+- `sendMessage.reset()` — clears `error`/`loading` manually.
+
+It's safe to call `emit` inside an `$effect`: the emitter's own state isn't tracked, so an ack resolving won't re-run the effect.
+
+## Store syntax
+
+Every handle also implements the Svelte store contract, so legacy (non-runes) components can use `$` instead of reading the rune directly:
+
+```svelte
+<script>
+  import { useGateway } from "@arkosjs/svelte-websockets";
+  const chat = useGateway("/chat");
+  const sendMessage = chat.useEmit("send_message");
+</script>
+
+<p>{$chat.status}</p>
+{#if $sendMessage.loading}Sending...{/if}
+```
+
+## SvelteKit
+
+socket.io connects as soon as a `Manager` is created, so create it in the browser only — disable SSR for the route (`export const ssr = false`) or only render the provider when `browser` from `$app/environment` is true.
+
+A full example app lives at [`examples/tic-tac-toe-websockets/frontend-svelte`](https://github.com/Uanela/arkos/tree/main/examples/tic-tac-toe-websockets/frontend-svelte).
+
+## Cleanup
+
+Handled for you — `ArkosProvider` destroys the underlying client when it's destroyed, and every `chat.on()` subscription cleans up when its component is destroyed.
