@@ -170,6 +170,30 @@ export async function processSubdir(
   return result;
 }
 
+/**
+ * Warns when, under the "hybrid" validation resolver, both a dto and a schema
+ * file were found for the same validation key, since neither will be
+ * automatically applied in that case.
+ */
+export function warnHybridValidationConflicts(
+  modelName: string,
+  fileStructure: ReturnType<typeof getFileModuleComponentsFileStructure>,
+  dtos: Record<string, any>,
+  schemas: Record<string, any>,
+) {
+  Object.keys(dtos).forEach((key) => {
+    if (!(key in schemas)) return;
+
+    const dtoFileName = (fileStructure.dtos as any)[key];
+    const schemaFileName = (fileStructure.schemas as any)[key];
+
+    sheu.warn(
+      `Found both ${dtoFileName} and ${schemaFileName}, none of them will be automatically used.`,
+      { timestamp: true },
+    );
+  });
+}
+
 export type ModuleComponents = ImportModuleComponentsReturnType;
 
 type ImportModuleComponentsReturnType<ModuleType extends string = any> = {
@@ -287,14 +311,31 @@ export async function importModuleComponents(
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
   const fileStructure = getFileModuleComponentsFileStructure(modelName);
 
-  const validationSubdir = arkosConfig.validation?.resolver
-    ? arkosConfig.validation.resolver === "zod"
+  const resolver = arkosConfig.validation?.resolver;
+  const isHybridValidation = resolver === "hybrid";
+  const validationSubdir = resolver
+    ? resolver === "zod"
       ? "schemas"
-      : "dtos"
+      : isHybridValidation
+        ? null
+        : "dtos"
     : null;
 
-  const [validators] = await Promise.all([
-    validationSubdir && processSubdir(modelName, validationSubdir),
+  const [validationResult] = await Promise.all([
+    (async () => {
+      if (isHybridValidation) {
+        const [dtos, schemas] = await Promise.all([
+          processSubdir(modelName, "dtos"),
+          processSubdir(modelName, "schemas"),
+        ]);
+        warnHybridValidationConflicts(modelName, fileStructure, dtos, schemas);
+        return { dtos, schemas };
+      }
+
+      if (!validationSubdir) return undefined;
+
+      return { [validationSubdir]: await processSubdir(modelName, validationSubdir) };
+    })(),
     ...Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       if (
         ["createMany", "findMany", "findOne", "updateMany"].includes(key) ||
@@ -351,12 +392,12 @@ export async function importModuleComponents(
 
   prismaModelsModules[pascalCase(modelName)] = {
     ...result,
-    ...(validationSubdir && { [validationSubdir]: validators }),
+    ...validationResult,
   };
 
   return {
     ...result,
-    ...(validationSubdir && { [validationSubdir]: validators }),
+    ...validationResult,
   };
 }
 

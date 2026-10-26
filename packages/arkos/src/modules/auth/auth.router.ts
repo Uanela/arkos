@@ -63,6 +63,12 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
     const validationConfigs = arkosConfig?.validation;
     if (validationConfigs?.resolver === "class-validator") return dtos?.[key];
     else if (validationConfigs?.resolver === "zod") return schemas?.[key];
+    else if (validationConfigs?.resolver === "hybrid") {
+      const dto = dtos?.[key];
+      const schema = schemas?.[key];
+      if (dto && schema) return undefined;
+      return dto ?? schema;
+    }
 
     return undefined;
   };
