@@ -41,10 +41,7 @@ class TemplateCompiler {
       "query-user.dto.ts.hbs",
     ];
 
-    const authModuleComponents = [
-      "auth.policy.ts.hbs",
-      "auth.router.ts.hbs",
-    ];
+    const authModuleComponents = ["auth.policy.ts.hbs", "auth.router.ts.hbs"];
 
     const authPermissionModuleComponents = [
       "auth-permission.router.ts.hbs",
@@ -77,6 +74,8 @@ class TemplateCompiler {
         ...authRoleModuleComponents,
         ...userDtoFiles,
         "file-upload.auth.ts.hbs",
+        "index.ts.hbs",
+        "prisma.config.ts.hbs",
       );
 
     if (!config.authentication?.type || config.authentication?.type === "none")
@@ -90,7 +89,7 @@ class TemplateCompiler {
         ...authPermissionModuleComponents,
         ...authRoleModuleComponents,
         ...userDtoFiles,
-        "file-upload.policy.ts.hbs"
+        "file-upload.policy.ts.hbs",
       );
 
     if (config.authentication?.type === "static")
@@ -98,7 +97,7 @@ class TemplateCompiler {
         ...dynamicAuthPrismaFiles,
         ...dynamicAuthDtoFiles,
         ...authPermissionModuleComponents,
-        ...authRoleModuleComponents
+        ...authRoleModuleComponents,
       );
 
     // Ignore all DTOs when no validation library is selected
@@ -106,7 +105,7 @@ class TemplateCompiler {
       files.push(
         ...sharedAuthDtoFiles,
         ...dynamicAuthDtoFiles,
-        ...userDtoFiles
+        ...userDtoFiles,
       );
 
     // Ignoring typescript related files when typescript false
@@ -148,7 +147,7 @@ class TemplateCompiler {
         } else if (dirent.name.endsWith(".hbs")) {
           const templatePath = fullPath;
           const template = handlebars.compile(
-            fs.readFileSync(templatePath, "utf8")
+            fs.readFileSync(templatePath, "utf8"),
           );
 
           let arkosCurrentVersion = "{{arkosCurrentVersion}}";
@@ -158,12 +157,12 @@ class TemplateCompiler {
 
           let outputPath = path.join(
             outputDir,
-            relativePath.replace(".hbs", "")
+            relativePath.replace(".hbs", ""),
           );
           if (dirent.name.endsWith(".ts.hbs"))
             outputPath = path.join(
               outputDir,
-              relativePath.replace(".ts.hbs", ext)
+              relativePath.replace(".ts.hbs", ext),
             );
 
           fs.mkdirSync(path.dirname(outputPath), { recursive: true });
@@ -183,3 +182,4 @@ class TemplateCompiler {
 const templateCompiler = new TemplateCompiler();
 
 export default templateCompiler;
+
