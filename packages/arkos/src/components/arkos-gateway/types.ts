@@ -31,6 +31,16 @@ export interface ArkosSocket<
   SocketLocals extends Record<string, any> = Record<string, any>,
 > extends Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData> {
   /**
+   * The engine.io handshake, enriched with the parsed `Cookie` header.
+   *
+   * Arkos parses the raw header once per connection, so handlers can read
+   * cookies without installing `io.engine.use(cookieParser())` themselves.
+   */
+  handshake: Socket["handshake"] & {
+    cookies?: Record<string, string>;
+  };
+
+  /**
    * Populated by Arkos after successful authentication on connection.
    * Available in all event handlers when `authentication: true` on the gateway.
    */
@@ -324,6 +334,17 @@ export interface ArkosUserTarget extends ArkosBroadcastOperator {
 export type ArkosGatewayPipe = (
   socket: ArkosSocket,
   data: any,
+) => void | Promise<void>;
+
+/**
+ * Connection-level middleware registered with `gateway.use()`.
+ * Same `(socket, next)` contract as Socket.io namespace middleware.
+ * Runs before the namespace's authentication middleware and is inherited
+ * by nested gateways.
+ */
+export type ArkosGatewayMiddleware = (
+  socket: ArkosSocket,
+  next: (err?: any) => void
 ) => void | Promise<void>;
 
 export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {

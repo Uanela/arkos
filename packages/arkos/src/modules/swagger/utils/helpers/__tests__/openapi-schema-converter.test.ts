@@ -542,7 +542,11 @@ describe("OpenAPISchemaConverter", () => {
 
       openApiSchemaConverter.convertResponseDefinition("200", zodSchema);
 
-      expect(mockZodToJsonSchema).toHaveBeenCalledWith(zodSchema, { target: "openapi-3.0" });
+      expect(mockZodToJsonSchema).toHaveBeenCalledWith(zodSchema, {
+        target: "openapi-3.0",
+        io: "input",
+        unrepresentable: "any",
+      });
       expect(mockClassValidatorToJsonSchema).not.toHaveBeenCalled();
     });
   });

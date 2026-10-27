@@ -26,6 +26,7 @@ jest.mock("fs", () => ({
     unlink: jest.fn(),
   },
   readdirSync: jest.fn(),
+  readFileSync: jest.fn(() => ""),
 }));
 jest.mock("util");
 jest.mock("../../../../../exports");
@@ -40,7 +41,122 @@ const getServerArkosConfig =
 
 const mockDeepmerge = require("../../../../helpers/deepmerge.helper").default;
 
+const storageOptions = (multer.diskStorage as unknown as jest.Mock).mock
+  .calls[0]?.[0];
+
 describe("UploadManager", () => {
+  describe("storage destination", () => {
+    const destination = (req: any, file: any) =>
+      new Promise<any[]>((resolve) => {
+        storageOptions.destination(req, file, (...args: any[]) =>
+          resolve(args)
+        );
+      });
+
+    it("defaults to the MIME-derived directory and public path", async () => {
+      const file: any = {
+        mimetype: "image/png",
+        fieldname: "avatar",
+        originalname: "avatar.png",
+      };
+
+      const [error, dir] = await destination({}, file);
+
+      expect(error).toBeNull();
+      expect(dir).toContain("uploads/images");
+      expect(file.__arkos.uploadDir).toBe("images");
+      expect(file.__arkos.urlPath).toBe("/images");
+    });
+
+    it("uses the route uploadDir and urlPath", async () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "storage/acme",
+        urlPath: "/private/files",
+      };
+      const file: any = {
+        mimetype: "application/pdf",
+        fieldname: "avatar",
+        originalname: "document.pdf",
+      };
+
+      const [error, dir] = await destination(
+        { __arkos: { uploadConfig: config } },
+        file
+      );
+
+      expect(error).toBeNull();
+      expect(dir).toContain("uploads/storage/acme");
+      expect(file.__arkos.uploadDir).toBe("storage/acme");
+      expect(file.__arkos.urlPath).toBe("/private/files");
+    });
+
+    it("supports per-field uploadDir and urlPath", async () => {
+      const config = {
+        type: "fields" as const,
+        fields: [
+          { name: "avatar", type: "single" as const },
+          {
+            name: "resume",
+            type: "single" as const,
+            uploadDir: "storage/resumes",
+            urlPath: "/private/resumes",
+          },
+        ],
+      };
+      const file: any = {
+        mimetype: "application/pdf",
+        fieldname: "resume",
+        originalname: "resume.pdf",
+      };
+
+      const [error, dir] = await destination(
+        { __arkos: { uploadConfig: config } },
+        file
+      );
+
+      expect(error).toBeNull();
+      expect(dir).toContain("uploads/storage/resumes");
+      expect(file.__arkos.urlPath).toBe("/private/resumes");
+    });
+
+    it("falls back to the route uploadDir for fields without their own", async () => {
+      const config = {
+        type: "fields" as const,
+        uploadDir: "storage/shared",
+        fields: [{ name: "avatar", type: "single" as const }],
+      };
+      const file: any = {
+        mimetype: "image/png",
+        fieldname: "avatar",
+        originalname: "avatar.png",
+      };
+
+      const [, dir] = await destination({ __arkos: { uploadConfig: config } }, file);
+
+      expect(dir).toContain("uploads/storage/shared");
+    });
+
+    it("rejects directories that escape the upload root", async () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "../outside",
+      };
+      const file: any = {
+        mimetype: "image/png",
+        fieldname: "avatar",
+        originalname: "avatar.png",
+      };
+
+      const [error] = await destination({ __arkos: { uploadConfig: config } }, file);
+
+      expect(error.message).toMatch(/Invalid upload directory/);
+      expect(error.statusCode).toBeUndefined();
+    });
+  });
+
   let mockReq: any;
   let mockRes: any;
   let mockNext: jest.Mock;
@@ -141,7 +257,7 @@ describe("UploadManager", () => {
 
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.headers["x-upload-dir"]).toBe("/custom");
+      expect(mockReq.__arkos?.uploadConfig).toBe(config);
     });
 
     it("should handle upload errors", () => {
@@ -271,15 +387,18 @@ describe("UploadManager", () => {
         field: "avatar",
         attachToBody: "pathname" as const,
       };
-      mockReq.file = { path: "C:\\uploads\\file.jpg" };
-      // mockGenerateRelativePath.mockReturnValue("/uploads/C:/file.jpg");
+      mockReq.file = {
+        path: "C:\\uploads\\file.jpg",
+        filename: "file.jpg",
+        __arkos: { uploadDir: "images", urlPath: "/images" },
+      };
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.file.pathname).toBe("/api/uploadsC:/uploads/file.jpg");
+      expect(mockReq.file.pathname).toBe("/api/uploads/images/file.jpg");
       expect(mockReq.file.url).toBe(
-        "http://localhost:3000/api/uploads/C:/file.jpg"
+        "http://localhost:3000/api/uploads/images/file.jpg"
       );
       expect(mockReq.body).toBeDefined();
       expect(mockNext).toHaveBeenCalled();
@@ -298,13 +417,15 @@ describe("UploadManager", () => {
         path:
           cwd +
           "\\uploads\\companies\\logos\\company-1770044939233-8726529.png",
+        filename: "company-1770044939233-8726529.png",
+        __arkos: { uploadDir: "companies/logos", urlPath: "/companies/logos" },
       };
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
       expect(mockReq.file.pathname).toBe(
-        "/api/uploads/uploads/companies/logos/company-1770044939233-8726529.png"
+        "/api/uploads/companies/logos/company-1770044939233-8726529.png"
       );
       expect(mockReq.file.url).toBe(
         "http://localhost:3000/api/uploads/companies/logos/company-1770044939233-8726529.png"
@@ -324,14 +445,18 @@ describe("UploadManager", () => {
           };
         },
       };
-      mockReq.file = { path: "C:\\uploads\\file.jpg" };
+      mockReq.file = {
+        path: "C:\\uploads\\file.jpg",
+        filename: "file.jpg",
+        __arkos: { uploadDir: "documents", urlPath: "/documents" },
+      };
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.file.pathname).toBe("/api/uploadsC:/uploads/file.jpg");
+      expect(mockReq.file.pathname).toBe("/api/uploads/documents/file.jpg");
       expect(mockReq.file.url).toBe(
-        "http://localhost:3000/api/uploads/C:/file.jpg"
+        "http://localhost:3000/api/uploads/documents/file.jpg"
       );
       expect(mockReq.body.avatar.hello).toBeDefined();
       expect(mockNext).toHaveBeenCalled();
@@ -348,6 +473,7 @@ describe("UploadManager", () => {
         .mockImplementation(() => "S:/projects/store/backend");
       mockReq.file = {
         path: "S:/projects/store/backend/uploads/mobile/apps/product-image.png",
+        __arkos: { uploadDir: "mobile/apps", urlPath: "/mobile/apps" },
       };
 
       const middleware = uploadManager.handlePostUpload(config);
@@ -479,11 +605,16 @@ describe("UploadManager", () => {
         field: "avatar",
         attachToBody: "pathname" as const,
       };
-      mockReq.file = { path: "C:\\uploads\\windows\\file.jpg" };
+      mockReq.file = {
+        path: "C:\\uploads\\windows\\file.jpg",
+        filename: "file.jpg",
+        __arkos: { uploadDir: "windows", urlPath: "/windows" },
+      };
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
+      expect(mockReq.file.pathname).toBe("/api/uploads/windows/file.jpg");
       expect(mockReq.file.pathname).not.toContain("\\");
       expect(mockNext).toHaveBeenCalled();
     });
@@ -547,6 +678,29 @@ describe("UploadManager", () => {
       expect(optimizeImage).toHaveBeenCalledWith(
         "/uploads/images/avatar-1.png",
         { resizeTo: 800, quality: 70 }
+      );
+    });
+
+    it("should pass optimize: false through to the optimizer", async () => {
+      (optimizeImage as jest.Mock).mockResolvedValue(
+        "/uploads/images/document-1.png"
+      );
+      const config = {
+        type: "single" as const,
+        field: "document",
+        image: { optimize: false },
+      } as any;
+      mockReq.file = {
+        path: "/uploads/images/document-1.png",
+        mimetype: "image/png",
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(optimizeImage).toHaveBeenCalledWith(
+        "/uploads/images/document-1.png",
+        { optimize: false }
       );
     });
 
@@ -1536,7 +1690,7 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it("should throw AppError when post-upload processing fails", async () => {
+    it("should throw an internal Error when post-upload processing fails", async () => {
       const config = {
         type: "single" as const,
         field: "avatar",
@@ -1555,8 +1709,7 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
       const error = mockNext.mock.calls[0][0];
       expect(error.message).toContain("File uploads post processing failed");
-      expect(error.statusCode).toBe(500);
-      expect(error.code).toBe("FileUploadPostProcessError");
+      expect(error.statusCode).toBeUndefined();
     });
   });
 
@@ -1837,6 +1990,298 @@ describe("UploadManager", () => {
       expect(bodyUpdate.slides[1]).toHaveProperty("mobileImage");
       expect(bodyUpdate.slides[1]).toHaveProperty("tabletImage");
       expect(bodyUpdate.slides[1]).toHaveProperty("desktopImage");
+    });
+  });
+
+  describe("dynamic upload settings", () => {
+    const runDestination = (req: any, file: any) =>
+      new Promise<any[]>((resolve) => {
+        storageOptions.destination(req, file, (...args: any[]) =>
+          resolve(args)
+        );
+      });
+
+    const runFilename = (req: any, file: any) =>
+      new Promise<any[]>((resolve) => {
+        storageOptions.filename(req, file, (...args: any[]) =>
+          resolve(args)
+        );
+      });
+
+    const fileFor = (
+      fieldname: string,
+      originalname: string,
+      mimetype = "image/png"
+    ): any => ({ fieldname, originalname, mimetype });
+
+    it("resolves dir params from prepare and lets prepare win over req.params", async () => {
+      const prepare = jest.fn().mockResolvedValue({
+        dirParams: { userId: "42" },
+      });
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "users/:userId/files",
+        urlPath: "/users/:userId/files",
+        prepare,
+      };
+      const req: any = {
+        params: { userId: "99" },
+        __arkos: { uploadConfig: config },
+      };
+      const file = fileFor("avatar", "avatar.png");
+
+      const [error, dir] = await runDestination(req, file);
+
+      expect(error).toBeNull();
+      expect(prepare).toHaveBeenCalledWith(req, {});
+      expect(dir).toContain("uploads/users/42/files");
+      expect(file.__arkos).toMatchObject({
+        uploadDir: "users/42/files",
+        urlPath: "/users/42/files",
+        urlPathExact: false,
+        dirParams: { userId: "42" },
+      });
+    });
+
+    it("caches the resolved settings for every file of the same config", async () => {
+      const prepare = jest.fn().mockResolvedValue({
+        dirParams: { userId: "42" },
+      });
+      const config = {
+        type: "array" as const,
+        field: "photos",
+        uploadDir: "users/:userId/files",
+        prepare,
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+
+      await runDestination(req, fileFor("photos", "a.png"));
+      await runDestination(req, fileFor("photos", "b.png"));
+
+      expect(prepare).toHaveBeenCalledTimes(1);
+    });
+
+    it("fails when prepare omits a required dir param", async () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "users/:userId/files",
+        prepare: () => ({ dirParams: {} }),
+      };
+      const req: any = {
+        params: {},
+        __arkos: { uploadConfig: config },
+      };
+
+      const [error] = await runDestination(req, fileFor("avatar", "a.png"));
+
+      expect(error.message).toMatch(/Missing required upload param/);
+    });
+
+    it("rejects unsafe dir params", async () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "users/:userId/files",
+        prepare: () => ({ dirParams: { userId: "../admin" } }),
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+
+      const [error] = await runDestination(req, fileFor("avatar", "a.png"));
+
+      expect(error.message).toMatch(/Invalid upload param ":userId"/);
+      expect(error.statusCode).toBeUndefined();
+    });
+
+    it("keeps exact url paths literal and static", async () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "storage/avatars",
+        urlPath: { exact: "/users/me/photo" },
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+      const file = fileFor("avatar", "avatar.png");
+
+      const [error] = await runDestination(req, file);
+
+      expect(error).toBeNull();
+      expect(file.__arkos).toMatchObject({
+        uploadDir: "storage/avatars",
+        urlPath: "/users/me/photo",
+        urlPathExact: true,
+      });
+    });
+
+    it("uses prepareFile with the file, dir params, and index", async () => {
+      const prepareFile = jest.fn().mockResolvedValue({
+        filename: "profile.webp",
+      });
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "users/:userId/files",
+        prepare: () => ({ dirParams: { userId: "42" } }),
+        prepareFile,
+      };
+      const req: any = {
+        params: {},
+        res: { locals: { tenant: "acme" } },
+        __arkos: { uploadConfig: config },
+      };
+      const file = fileFor("avatar", "avatar.png");
+
+      await runDestination(req, file);
+      const [error, finalName] = await runFilename(req, file);
+
+      expect(error).toBeNull();
+      expect(finalName).toBe("profile.png");
+      expect(prepareFile).toHaveBeenCalledWith(
+        { file, dirParams: { userId: "42" }, index: 0 },
+        req,
+        { tenant: "acme" }
+      );
+    });
+
+    it("increments prepareFile index per field", async () => {
+      const prepareFile = jest.fn().mockImplementation(({ index }) => ({
+        filename: `photo-${index}`,
+      }));
+      const config = {
+        type: "array" as const,
+        field: "photos",
+        uploadDir: "storage/photos",
+        prepareFile,
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+      const first = fileFor("photos", "a.png");
+      const second = fileFor("photos", "b.png");
+
+      await runDestination(req, first);
+      const [, firstName] = await runFilename(req, first);
+      await runDestination(req, second);
+      const [, secondName] = await runFilename(req, second);
+
+      expect(prepareFile).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ index: 0 }),
+        req,
+        {}
+      );
+      expect(prepareFile).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ index: 1 }),
+        req,
+        {}
+      );
+      expect(firstName).toBe("photo-0.png");
+      expect(secondName).toBe("photo-1.png");
+    });
+
+    it("rejects unsafe names returned by prepareFile", async () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "storage/avatars",
+        prepareFile: () => ({ filename: "../escape" }),
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+      const file = fileFor("avatar", "avatar.png");
+
+      await runDestination(req, file);
+      const [error] = await runFilename(req, file);
+
+      expect(error.message).toMatch(/Invalid file name "../);
+    });
+
+    it("fails when two files target the same path in one request", async () => {
+      const config = {
+        type: "array" as const,
+        field: "photos",
+        uploadDir: "storage/photos",
+        prepareFile: () => ({ filename: "same" }),
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+      const first = fileFor("photos", "a.png");
+      const second = fileFor("photos", "b.png");
+
+      await runDestination(req, first);
+      await runFilename(req, first);
+      await runDestination(req, second);
+      const [error] = await runFilename(req, second);
+
+      expect(error).toMatchObject({ code: "UploadConflict" });
+      expect(error.message).toContain("Duplicate upload target");
+    });
+
+    it("allows the same file name in different folders", async () => {
+      const prepareFile = () => ({ filename: "same" });
+      const config = {
+        type: "fields" as const,
+        fields: [
+          {
+            name: "avatar",
+            type: "single" as const,
+            uploadDir: "storage/a",
+            prepareFile,
+          },
+          {
+            name: "cover",
+            type: "single" as const,
+            uploadDir: "storage/b",
+            prepareFile,
+          },
+        ],
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+      const avatar = fileFor("avatar", "a.png");
+      const cover = fileFor("cover", "b.png");
+
+      await runDestination(req, avatar);
+      const [avatarError] = await runFilename(req, avatar);
+      await runDestination(req, cover);
+      const [coverError] = await runFilename(req, cover);
+
+      expect(avatarError).toBeNull();
+      expect(coverError).toBeNull();
+    });
+
+    it("fails when overwrite is disabled and the target exists", async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "storage/avatars",
+        prepareFile: () => ({ filename: "profile" }),
+        overwrite: false,
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+      const file = fileFor("avatar", "avatar.png");
+
+      await runDestination(req, file);
+      const [error] = await runFilename(req, file);
+
+      expect(error).toMatchObject({ code: "UploadConflict" });
+      expect(error.message).toContain("overwrite is disabled");
+    });
+
+    it("overwrites by default", async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        uploadDir: "storage/avatars",
+        prepareFile: () => ({ filename: "profile" }),
+      };
+      const req: any = { params: {}, __arkos: { uploadConfig: config } };
+      const file = fileFor("avatar", "avatar.png");
+
+      await runDestination(req, file);
+      const [error, finalName] = await runFilename(req, file);
+
+      expect(error).toBeNull();
+      expect(finalName).toBe("profile.png");
     });
   });
 

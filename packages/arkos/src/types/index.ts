@@ -1,6 +1,7 @@
 import { NextFunction, Response, Request } from "express";
 import { PrismaModels } from "../generated";
 import { ArkosFile } from "./upload";
+import type { ArkosRequestInternalState } from "./internal";
 
 /**
  * Type definition for authentication-related Prisma query operations
@@ -290,6 +291,11 @@ export interface ArkosRequest<
    * Name of the Prisma model being queried
    */
   modelName?: string;
+
+  /**
+   * @internal Upload state resolved by Arkos.
+   */
+  __arkos?: ArkosRequestInternalState;
 }
 
 export interface ArkosResponse<

@@ -118,12 +118,24 @@ describe("FileUploadService", () => {
       }
 
       // For non-relative paths or simpler cases
-      return input;
+      return input.replace(/\/{2,}/g, "/");
     });
 
     (path.join as any as jest.Mock).mockImplementation((...args) =>
       args.join("/").replaceAll("//", "/")
     );
+    (path as any).sep = "/";
+    (path.isAbsolute as any as jest.Mock).mockImplementation((value) =>
+      value.startsWith("/")
+    );
+    (path.relative as any as jest.Mock).mockImplementation((from, to) => {
+      const normalizedFrom = from.replace(/\/+$/, "");
+      to = to.replace(/\/{2,}/g, "/");
+      if (to === normalizedFrom) return "";
+      if (to.startsWith(`${normalizedFrom}/`))
+        return to.slice(normalizedFrom.length + 1);
+      return `../${to.replace(/^\/+/, "")}`;
+    });
     (path.extname as any as jest.Mock).mockImplementation((filePath) => ".jpg");
     (path.basename as any as jest.Mock).mockImplementation((filePath, ext) => {
       const base = filePath.split("/").pop();

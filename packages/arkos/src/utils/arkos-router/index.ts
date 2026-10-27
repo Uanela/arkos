@@ -228,7 +228,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
         param.name !== "*"
       )
         throw new Error(
-          `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`,
+          `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
         );
     }
 

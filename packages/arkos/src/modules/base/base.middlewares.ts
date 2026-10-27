@@ -26,7 +26,6 @@ import { lenientDecode } from "../../utils/helpers/url-helpers";
 import { pascalCase } from "../../exports/utils";
 import validationManager from "../../types/validation/validation-manager";
 import { ZodType } from "zod";
-import { isZodSchema } from "../../utils/dynamic-loader";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -286,12 +285,12 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
     Object.keys(routeConfig.validation || {}).length > 0
   )
     throw Error(
-      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`,
+      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`
     );
 
   if ((validators as any) === true)
     throw Error(
-      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`,
+      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
     );
 
   const validatorsKey: ("body" | "query" | "params")[] = [
@@ -330,7 +329,7 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         key === "body"
       ) {
         throw Error(
-          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`,
+          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
         );
       }
 
@@ -339,7 +338,7 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         !validationManager.isValidator(validators?.[key])
       )
         throw Error(
-          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`,
+          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`
         );
     });
 

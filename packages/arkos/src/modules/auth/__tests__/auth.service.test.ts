@@ -723,6 +723,203 @@ describe("AuthService", () => {
     it("should return null when the context is neither a request nor a socket", async () => {
       expect(await authService.getAuthenticatedUser({} as any)).toBeNull();
     });
+
+    it("should authenticate a socket using only the arkos_access_token cookie", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: {
+          auth: {},
+          headers: {
+            cookie: "theme=dark; arkos_access_token=cookie-token; other=value",
+          },
+        },
+      };
+
+      const result = await authService.getAuthenticatedUser(socket);
+
+      expect(authService.verifyJwtToken).toHaveBeenCalledWith("cookie-token");
+      expect(socket.accessToken).toBe("cookie-token");
+      expect(result).toEqual({ id: "user-123", username: "testuser" });
+    });
+
+    it("should fall back to socket.request headers when handshake headers have no cookie", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: { auth: {}, headers: {} },
+        request: {
+          headers: { cookie: "arkos_access_token=request-cookie-token" },
+        },
+      };
+
+      await authService.getAuthenticatedUser(socket);
+
+      expect(authService.verifyJwtToken).toHaveBeenCalledWith(
+        "request-cookie-token",
+      );
+    });
+
+    it("should reject a socket when the cookie token is invalid", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=invalid-token" },
+        },
+      };
+
+      (authService.verifyJwtToken as jest.Mock).mockRejectedValue(
+        new AppError("Invalid token", 401, "InvalidToken"),
+      );
+
+      await expect(authService.getAuthenticatedUser(socket)).rejects.toThrow(
+        "Invalid token",
+      );
+    });
+
+    it("should return null when the socket has no token source", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: { auth: {}, headers: {} },
+      };
+
+      expect(await authService.getAuthenticatedUser(socket)).toBeNull();
+      expect(authService.verifyJwtToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("extractSocketToken", () => {
+    const extract = (socket: any) =>
+      authService.extractSocketToken(socket);
+
+    it("should prefer handshake.auth.token over the authorization header and cookie", () => {
+      const socket = {
+        handshake: {
+          auth: { token: "auth-token" },
+          headers: {
+            authorization: "Bearer header-token",
+            cookie: "arkos_access_token=cookie-token",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("auth-token");
+    });
+
+    it("should use the authorization header when auth.token is absent and strip Bearer", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: {
+            authorization: "Bearer header-token",
+            cookie: "arkos_access_token=cookie-token",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("header-token");
+    });
+
+    it("should strip Bearer case-insensitively and tolerate a missing space", () => {
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "bearer lower-token" },
+          },
+        }),
+      ).toBe("lower-token");
+
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "Bearerjoined-token" },
+          },
+        }),
+      ).toBe("joined-token");
+    });
+
+    it("should use the cookie when both auth.token and the authorization header are absent", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=cookie-token" },
+        },
+      };
+
+      expect(extract(socket)).toBe("cookie-token");
+    });
+
+    it("should ignore the no-token logout sentinel", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=no-token" },
+        },
+      };
+
+      expect(extract(socket)).toBeNull();
+    });
+
+    it("should parse multiple cookies, encoded values, and values containing '='", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: {
+            cookie:
+              "theme=dark; arkos_access_token=token%2Bvalue%3D; other=some=value",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("token+value=");
+    });
+
+    it("should skip malformed cookie pairs", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: {
+            cookie:
+              "; ; broken; =missing-key; bad=%E0%A4%A; arkos_access_token=good-token",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("good-token");
+    });
+
+    it("should use cookies parsed by the gateway when available", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=raw-token" },
+          cookies: { arkos_access_token: "parsed-token" },
+        },
+      };
+
+      expect(extract(socket)).toBe("parsed-token");
+    });
+
+    it("should return null for empty or absent headers", () => {
+      expect(extract({ handshake: { auth: {}, headers: {} } })).toBeNull();
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "", cookie: "" },
+          },
+        }),
+      ).toBeNull();
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "Bearer ", cookie: "other=value" },
+          },
+        }),
+      ).toBeNull();
+    });
   });
 
   describe("handleAccessControl module and request branches", () => {

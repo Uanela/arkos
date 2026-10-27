@@ -14,7 +14,11 @@ class OpenAPIchemaConverter {
   constructor() {
     this.validatorToJsonSchema = (schema: any) => {
       return isZodSchema(schema)
-        ? z.toJSONSchema(schema, { target: "openapi-3.0" })
+        ? z.toJSONSchema(schema, {
+            target: "openapi-3.0",
+            io: "input",
+            unrepresentable: "any",
+          })
         : classValidatorToJsonSchema(schema);
     };
   }

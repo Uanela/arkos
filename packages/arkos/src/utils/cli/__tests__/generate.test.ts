@@ -16,6 +16,12 @@ jest.mock("path", () => ({
 jest.mock("../utils/template-generators");
 jest.mock("../../sheu");
 jest.mock("../utils/cli.helpers");
+jest.mock("../../helpers/exit-error", () => ({
+  __esModule: true,
+  default: jest.fn((message: string) => {
+    throw new Error(message);
+  }),
+}));
 jest.mock("../../helpers/fs.helpers", () => ({
   ...jest.requireActual("../../helpers/fs.helpers"),
   getUserFileExtension: jest.fn(),

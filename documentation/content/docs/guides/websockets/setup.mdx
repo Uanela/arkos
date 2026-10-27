@@ -39,11 +39,25 @@ gateway.register(io);
 app.listen(server)
 ```
 
-`register(io, options?)` can only be called once per `io` instance — call it on your root Gateway and compose the rest with `.use()` (see below). Calling it twice throws.
+`register(io, options?, callback?)` can only be called once per `io` instance — call it on your root Gateway and compose the rest with `.use()` (see below). Calling it twice throws.
 
 ```ts
 gateway.register(io, {
   store: myRedisStore, // optional — defaults to an in-memory store
+});
+```
+
+> Available from `v1.8.0-rc`
+
+Pass a callback as the second or third argument to run code once the Gateway (and any nested Gateways) are mounted:
+
+```ts
+gateway.register(io, () => {
+  console.log("gateway mounted");
+});
+
+gateway.register(io, { store: myRedisStore }, () => {
+  console.log("gateway mounted on", gateway.nsp.name);
 });
 ```
 
@@ -64,7 +78,25 @@ gateway.use((socket, next) => {
 gateway.use(adminGateway);
 ```
 
-A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits the parent's `authentication` and `rateLimit` unless it sets its own, and it inherits all of the parent's lifecycle hooks. It does **not** automatically inherit the parent's `.pipe()` middlewares — those are scoped to the Gateway that registered them.
+A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits the parent's `authentication` and `rateLimit` unless it sets its own, and it inherits all of the parent's lifecycle hooks.
+
+Connection middlewares run after authentication, so `socket.currentUser` is available inside them. They also drill down, Express-style: for a socket connecting to a child namespace, the authentication middleware runs first, then the parent's `.use()` middlewares (outermost ancestor first), then the child's own `.use()` middlewares:
+
+```ts
+gateway.use((socket, next) => {
+  console.log("parent saw", socket.id);
+  next();
+});
+
+gateway.use(adminGateway);
+adminGateway.use((socket, next) => {
+  console.log("child saw", socket.id);
+  next();
+});
+// connecting to /admin runs auth → logs "parent saw" → "child saw"
+```
+
+`.pipe()` middlewares are different: they are event-level and scoped to the Gateway that registered them — a child does not inherit its parent's pipes.
 
 ## Attaching an event handler — `.on()`
 

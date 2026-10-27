@@ -201,6 +201,18 @@ describe("File Upload Helpers", () => {
       expect(result).toBe("https://example.com/api/uploads/images/test.webp");
     });
 
+    it("should skip optimization and keep the original bytes when optimize is false", async () => {
+      mockReq.params.fileType = "images";
+
+      const result = await processImage(mockReq, mockNext, "images/test.jpg", {
+        optimize: false,
+      });
+
+      expect(sharp).not.toHaveBeenCalled();
+      expect(fs.rename).not.toHaveBeenCalled();
+      expect(result).toBe("https://example.com/api/uploads/images/test.jpg");
+    });
+
     it("should resize to fit within the target without enlarging", async () => {
       mockReq.params.fileType = "images";
 
@@ -267,7 +279,9 @@ describe("File Upload Helpers", () => {
 
       expect(result).toBe(null);
       expect(mockNext).toHaveBeenCalledWith(
-        expect.objectContaining({ message: "Image failed" })
+        expect.objectContaining({
+          message: "Cannot process uploaded image: Image failed",
+        })
       );
     });
 

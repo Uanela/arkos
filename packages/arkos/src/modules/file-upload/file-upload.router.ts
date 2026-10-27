@@ -21,12 +21,18 @@ import { UserArkosConfig } from "../../utils/define-config";
 import { FileUploadRouterEndpoint } from "../../types/router-config";
 import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
 import AppError from "../error-handler/utils/app-error";
+import ExitError from "../../utils/helpers/exit-error";
+import { DEFAULT_UPLOAD_DIRS } from "./utils/helpers/upload-path.helper";
+import { uploadServingRegistry } from "./utils/helpers/upload-serving.registry";
 
 export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
   const router = ArkosRouter();
   const { fileUpload, globalPrefix } = arkosConfig;
 
-  if (!fileUpload?.enabled === false) return router;
+  if (fileUpload?.enabled === false) {
+    uploadServingRegistry.setFindFileServingEnabled(false);
+    return router;
+  }
 
   const moduleComponents = getModuleComponents("file-upload");
   let {
@@ -43,7 +49,14 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
     } = moduleComponents);
 
   const routerConfig = customRouterModule?.config || {};
-  if (routerConfig?.disable === true) return router;
+  if (routerConfig?.disable === true) {
+    uploadServingRegistry.setFindFileServingEnabled(false);
+    return router;
+  }
+
+  uploadServingRegistry.setFindFileServingEnabled(
+    !isEndpointDisabled(routerConfig, "findFile")
+  );
 
   const customRouter = customRouterModule?.default as Router;
   let basePathname = fileUpload?.baseRoute || "/api/uploads/";
@@ -59,7 +72,7 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
     if (routerValidator.isExpressRouter(customRouter))
       router.use({ path: basePathname }, customRouter);
     else
-      throw Error(
+      throw ExitError(
         `ValidationError: The exported router from file-upload.router.${getUserFileExtension()} is not a valid express or arkos Router.`
       );
   }
@@ -87,6 +100,7 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
   }
 
   if (!isEndpointDisabled(routerConfig, "findFile")) {
+    const servingMode = fileUpload?.serving || "all";
     const baseUploadDirFullPath = path.resolve(
       path
         .join(process.cwd(), fileUpload?.baseUploadDir || "uploads")
@@ -97,13 +111,34 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
         arkosConfig,
         "findFile",
         baseRoutePrefix,
-        `*`,
+        servingMode === "registered" ? `:fileType/*` : `*`,
         routerConfig,
         "file-upload",
         authConfigs
       ),
       ...processMiddleware(interceptors?.beforeFindFile),
       adjustRequestUrl,
+      ...(servingMode === "registered"
+        ? [
+            (req: ArkosRequest, _res: ArkosResponse, next: ArkosNextFunction) => {
+              if (
+                !(DEFAULT_UPLOAD_DIRS as readonly string[]).includes(
+                  req.params.fileType
+                )
+              )
+                return next(
+                  new AppError(
+                    `File ${req.path} was not found`,
+                    404,
+                    "FileNotFound",
+                    { filepath: req.path }
+                  )
+                );
+
+              next();
+            },
+          ]
+        : []),
       express.static(
         baseUploadDirFullPath,
         deepmerge(
@@ -169,7 +204,7 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
         arkosConfig,
         "updateFile",
         baseRoutePrefix,
-        `:fileType/:fileName`,
+        `:fileType/:fileName(.+)`,
         routerConfig,
         "file-upload",
         authConfigs
@@ -188,7 +223,7 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
         arkosConfig,
         "deleteFile",
         baseRoutePrefix,
-        `:fileType/:fileName`,
+        `:fileType/:fileName(.+)`,
         routerConfig,
         "file-upload",
         authConfigs

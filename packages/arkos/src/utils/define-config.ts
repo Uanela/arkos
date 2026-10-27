@@ -63,6 +63,7 @@ export function defineConfig<const T extends ArkosConfig>(
     fileUpload: {
       baseUploadDir: "uploads",
       baseRoute: "/api/uploads",
+      serving: "all",
       ...config.fileUpload,
     },
     routers: {
@@ -115,7 +116,11 @@ export type UserArkosConfigDefaults = {
   host: string;
   source: { entryPoint: string };
   request: { parameters: { allowDangerousPrismaQueryOptions: false } };
-  fileUpload: { baseUploadDir: "uploads"; baseRoute: "/api/uploads" };
+  fileUpload: {
+    baseUploadDir: "uploads";
+    baseRoute: "/api/uploads";
+    serving: "all";
+  };
   routers: { strict: false };
   swagger: {
     mode: NonNullable<ArkosConfig["swagger"]>["mode"];

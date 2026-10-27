@@ -5,7 +5,6 @@ import {
   UploadConfig,
   UploadConfigFieldEntry,
 } from "./types/upload-config";
-
 class ArkosRouterOpenAPIManager {
   private resolveSchemaFieldName(name: string): string {
     return name.replace(/\[\]/g, "[0]");

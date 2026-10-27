@@ -10,7 +10,6 @@ import {
   ArkosResponse,
 } from "../../../../types";
 import { fullCleanCwd } from "../../../../utils/helpers/fs.helpers";
-import AppError from "../../../error-handler/utils/app-error";
 
 export function adjustRequestUrl(
   req: ArkosRequest,
@@ -83,6 +82,8 @@ export const processFile = async (
  * strings from query parameters and are normalized internally.
  */
 export interface ImageOptimizationOptions {
+  /** Set to `false` to skip optimization and keep the original bytes as-is. */
+  optimize?: boolean;
   format?: string;
   quality?: number | string;
   width?: number | string;
@@ -127,6 +128,8 @@ export const optimizeImage = async (
   filePath: string,
   options: ImageOptimizationOptions = {},
 ): Promise<string> => {
+  if (options.optimize === false) return filePath;
+
   const ext = path.extname(filePath).toLowerCase();
   const outputFormat = (options.format || "webp").toLowerCase();
   const sharpFormat = outputFormat === "jpg" ? "jpeg" : outputFormat;
@@ -199,7 +202,7 @@ export const processImage = async (
   } catch (error: any) {
     if (error.message === "Input file contains unsupported image format")
       return processFile(req, filePath);
-    next(new AppError(error.message, 400, "CannotProcessImage", { error }));
+    next(new Error(`Cannot process uploaded image: ${error.message}`));
     return null;
   }
 };

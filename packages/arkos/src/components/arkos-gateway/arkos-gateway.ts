@@ -7,6 +7,7 @@ import {
   ArkosGatewayHookHandler,
   ArkosGatewayHookType,
   ArkosGatewayPipe,
+  ArkosGatewayMiddleware,
   ArkosGatewayConnectionHandler,
   ArkosSocket,
   ArkosGatewayRegisterOptions,
@@ -44,11 +45,22 @@ import {
   BadRequestError,
   TooManyRequestsError,
 } from "../../modules/error-handler/utils/errors";
+import { parseCookieHeader } from "../../modules/auth/utils/token-extraction";
+
+function parseHandshakeCookies(socket: ArkosSocket): void {
+  if (!socket.handshake || socket.handshake.cookies) return;
+
+  const rawCookie =
+    socket.handshake.headers?.cookie ?? socket.request?.headers?.cookie;
+
+  socket.handshake.cookies = parseCookieHeader(rawCookie);
+}
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
   private events: ArkosGatewayEventEntry[] = [];
   private pipes: ArkosGatewayPipe[] = [];
+  private middlewares: ArkosGatewayMiddleware[] = [];
   private gateways: IArkosGateway[] = [];
   private hooks: {
     type: ArkosGatewayHookType;
@@ -72,9 +84,10 @@ export class IArkosGateway {
 
   /**
    * Register a Socket.io connection-level middleware — runs before a socket
-   * is accepted into this gateway's namespace. Also accepts a child
-   * `ArkosGateway` which will inherit this gateway's name as prefix along
-   * with its auth, rateLimit, and pipes.
+   * is accepted into this gateway's namespace, and after authentication
+   * (so `socket.currentUser` is available).
+   * Also accepts a child `ArkosGateway` which will inherit this gateway's
+   * name as prefix along with its auth, rateLimit, and pipes.
    *
    * @example
    * chatGateway.use((socket, next) => {
@@ -84,12 +97,14 @@ export class IArkosGateway {
    * // nested gateway
    * chatGateway.use(notificationsGateway)
    */
-  use(...middlewareOrGateway: Array<ArkosGatewayPipe | IArkosGateway>): this {
+  use(
+    ...middlewareOrGateway: Array<ArkosGatewayMiddleware | IArkosGateway>
+  ): this {
     for (const item of middlewareOrGateway) {
       if (item instanceof IArkosGateway) {
         this.gateways.push(item);
       } else if (typeof item === "function") {
-        this.pipes.push(item as ArkosGatewayPipe);
+        this.middlewares.push(item as ArkosGatewayMiddleware);
       } else {
         throw new Error(
           `Invalid value for gateway.use() — expected an ArkosGateway instance or a middleware function but received "${typeof item}".`,
@@ -242,14 +257,40 @@ export class IArkosGateway {
    * @example
    * const io = new Server(server)
    * chatGateway.register(io)
+   *
+   * // with options
+   * chatGateway.register(io, { store: redisStore })
+   *
+   * // run code once the gateway is mounted
+   * chatGateway.register(io, { store: redisStore }, () => {
+   *   console.log("gateway mounted on", chatGateway.nsp.name)
+   * })
+   *
+   * The callback overload is available from 1.8.0-rc.
    */
-  register(io: Server, options: ArkosGatewayRegisterOptions = {}): void {
+  register(io: Server, callback?: () => void): void;
+  register(
+    io: Server,
+    options: ArkosGatewayRegisterOptions,
+    callback?: () => void,
+  ): void;
+  register(
+    io: Server,
+    optionsOrCallback: ArkosGatewayRegisterOptions | (() => void) = {},
+    callback?: () => void,
+  ): void {
+    const options =
+      typeof optionsOrCallback === "function" ? {} : optionsOrCallback;
+    const onRegistered =
+      typeof optionsOrCallback === "function" ? optionsOrCallback : callback;
+
     if ((io as any)._arkosGatewayRegistered)
       throw new Error(
         `The method gateway.register() can only be called once per io server instance. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/guides/web-sockets/setup.`,
       );
     (io as any)._arkosGatewayRegistered = true;
     this._register(io, undefined, this.hooks || [], this.pipes || [], options);
+    onRegistered?.();
   }
 
   private _register(
@@ -261,6 +302,7 @@ export class IArkosGateway {
     }[] = [],
     inheritedPipes: ArkosGatewayPipe[] = [],
     options: ArkosGatewayRegisterOptions = {},
+    inheritedMiddlewares: ArkosGatewayMiddleware[] = [],
   ): void {
     options.store = options.store ?? defaultGatewayStore;
     const { store } = options;
@@ -286,6 +328,7 @@ export class IArkosGateway {
 
     const resolvedRateLimit = this.config.rateLimit ?? parentConfig?.rateLimit;
     const resolvedHooks = [...inheritedHooks, ...this.hooks];
+    const resolvedMiddlewares = [...inheritedMiddlewares, ...this.middlewares];
 
     const connectHandlers = resolvedHooks
       .filter((h) => h.type === "connection")
@@ -302,6 +345,7 @@ export class IArkosGateway {
     if (resolvedAuth && isAuthenticationEnabled()) {
       ns.use(async (socket: any, next) => {
         socket = socket as ArkosSocket;
+        parseHandshakeCookies(socket);
         const startTime = new Date().getTime();
         try {
           await authHookManager.runAuthenticate(
@@ -338,8 +382,13 @@ export class IArkosGateway {
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`,
       );
 
+    for (const middleware of resolvedMiddlewares) {
+      ns.use((socket, next) => middleware(socket as ArkosSocket, next));
+    }
+
     ns.on("connection", async (s) => {
       const socket = s as ArkosSocket;
+      parseHandshakeCookies(socket);
       socket.locals = {};
 
       socket._arkos = { store, gatewayConfig: localConfig };
@@ -623,6 +672,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
         resolvedHooks,
         inheritedPipes,
         options,
+        resolvedMiddlewares,
       );
     }
   }

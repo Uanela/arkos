@@ -54,7 +54,7 @@ export default class RouteConfigValidator {
         openapi.parameters?.some((p: any) => p.in === "query")
       ) {
         throw new Error(
-          "Duplicate query validation definitions. " +
+          `Duplicate query validation definitions for route "${config.path}". ` +
             "When using validation.query, do not define query parameters in openapi.parameters. " +
             "They will be automatically migrated to OpenAPI specification.",
         );
@@ -65,7 +65,7 @@ export default class RouteConfigValidator {
         openapi.parameters?.some((p: any) => p.in === "params")
       ) {
         throw new Error(
-          "Duplicate path parameter validation definitions. " +
+          `Duplicate path parameter validation definitions for route "${config.path}". ` +
             "When using validation.params, do not define path parameters in openapi.parameters. " +
             "They will be automatically migrated to OpenAPI specification.",
         );
@@ -73,7 +73,7 @@ export default class RouteConfigValidator {
 
       if (config.validation.body && openapi.requestBody) {
         throw new Error(
-          "Duplicate request body validation definitions. " +
+          `Duplicate request body validation definitions for route "${config.path}". ` +
             "When using validation.body, do not define openapi.requestBody in openapi. " +
             "It will be automatically migrated to OpenAPI specification.",
         );

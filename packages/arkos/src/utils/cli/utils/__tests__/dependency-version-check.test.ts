@@ -8,6 +8,12 @@ import {
 
 jest.mock("../../../helpers/global.helpers");
 jest.mock("../../../helpers/arkos-config.helpers");
+jest.mock("../../../helpers/exit-error", () => ({
+  __esModule: true,
+  default: jest.fn((message: string) => {
+    throw new Error(message);
+  }),
+}));
 
 const mockGetPackageJson = getPackageJson as jest.Mock;
 const mockGetArkosConfig = getArkosConfig as jest.Mock;
