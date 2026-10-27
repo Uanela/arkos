@@ -1,4 +1,11 @@
-import { createContext, useContext, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   WebsocketClient,
   createWebsocketClient,
@@ -7,10 +14,17 @@ import { SocketOptions } from "socket.io-client";
 
 const WebsocketClientContext = createContext<WebsocketClient | null>(null);
 
+type SocketManager = Parameters<typeof createWebsocketClient>[0];
+
 interface WebSocketProviderProps {
   children: ReactNode;
-  manager: Parameters<typeof createWebsocketClient>[0];
+  manager: SocketManager;
   options?: Partial<SocketOptions>;
+}
+
+interface ClientEntry {
+  manager: SocketManager;
+  client: WebsocketClient;
 }
 
 /**
@@ -18,10 +32,13 @@ interface WebSocketProviderProps {
  * Mount once at the root — all `useGateway` calls beneath it
  * share the same client and lazily connect per namespace.
  *
+ * A new `manager` instance rebuilds the client and destroys the previous one.
+ * Changing `options` alone does not rebuild it.
+ *
  * @example
  * const manager = useMemo(() => new Manager("http://localhost:3000", {
  *   reconnection: true,
- * }), []);
+ * }), [accessToken]);
  *
  * <WebSocketProvider manager={manager} options={{ auth: { token } }}>
  *   <App />
@@ -32,14 +49,50 @@ export function WebSocketProvider({
   manager,
   options,
 }: WebSocketProviderProps) {
-  const clientRef = useRef<WebsocketClient | null>(null);
-  clientRef.current ??= createWebsocketClient(manager, options);
+  const [entry, setEntry] = useState<ClientEntry>(() => ({
+    manager,
+    client: createWebsocketClient(manager, options),
+  }));
+
+  if (entry.manager !== manager) {
+    setEntry({ manager, client: createWebsocketClient(manager, options) });
+  }
+
+  useDeferredDestroy(entry.client);
 
   return (
-    <WebsocketClientContext.Provider value={clientRef.current}>
+    <WebsocketClientContext.Provider value={entry.client}>
       {children}
     </WebsocketClientContext.Provider>
   );
+}
+
+/**
+ * Destroys `client` once it stops being the active one.
+ * Deferred by a tick so a StrictMode remount reuses it.
+ */
+function useDeferredDestroy(client: WebsocketClient): void {
+  const pending = useRef<{
+    client: WebsocketClient;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+
+  useEffect(() => {
+    if (pending.current?.client === client) {
+      clearTimeout(pending.current.timer);
+      pending.current = null;
+    }
+
+    return () => {
+      pending.current = {
+        client,
+        timer: setTimeout(() => {
+          pending.current = null;
+          client.destroy();
+        }, 0),
+      };
+    };
+  }, [client]);
 }
 
 /**

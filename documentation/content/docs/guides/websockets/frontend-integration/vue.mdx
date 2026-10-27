@@ -2,6 +2,98 @@
 title: Vue
 ---
 
-Under development! Track progress or contribute at [#260](https://github.com/Uanela/arkos/issues/260).
+`@arkosjs/vue-websockets` adapts `@arkosjs/websockets-client` to Vue 3. The API mirrors the [React binding](/docs/guides/websockets/frontend-integration/react) — the reactivity primitives are the only thing that changes.
 
-A starting-point implementation exists in the [contributing guide](https://github.com/Uanela/arkos/blob/feat/websockets-client/websockets-client/CONTRIBUTING_FRAMEWORK_BINDIND.md#vue) but hasn't been tested in a real Vue app yet — it needs a Vue 3 user to validate it before it lands here as real docs.
+## Setup
+
+Mount the provider once at the root:
+
+```vue
+<script setup lang="ts">
+import { computed, shallowRef } from "vue";
+import { Manager } from "socket.io-client";
+import { WebSocketProvider } from "@arkosjs/vue-websockets";
+
+const accessToken = shallowRef("your-auth-token");
+
+const manager = computed(
+  () =>
+    new Manager("http://localhost:3000", {
+      auth: { token: accessToken.value },
+      reconnection: true,
+    })
+);
+</script>
+
+<template>
+  <WebSocketProvider :manager="manager">
+    <Chat />
+  </WebSocketProvider>
+</template>
+```
+
+Every `useGateway()` call below the provider shares the same underlying `WebsocketClient`. The client is destroyed when the provider unmounts.
+
+<Callout type="info">
+Passing a **new `manager` instance** rebuilds the client and destroys the old one. Derive the manager from your auth token, as above, and re-authentication works without any extra wiring — the sockets reconnect with the new token. Only the manager's *identity* is compared, so an inline `options` object won't cause repeated rebuilds.
+</Callout>
+
+## `useGateway`
+
+One composable call per namespace. Call it from `setup()` (or an active effect scope), since listener cleanup is bound to that scope.
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { useGateway } from "@arkosjs/vue-websockets";
+
+const chat = useGateway("/chat");
+const messages = ref<{ content: string }[]>([]);
+
+chat.on("receive_message", (data) => messages.value.push(data));
+</script>
+
+<template>
+  <div>{{ chat.status }}</div>
+</template>
+```
+
+- `chat.on(event, handler)` — subscribes and cleans up automatically on unmount. Returns an `off()` function for unsubscribing early.
+- `chat.status` — reactive: `"connected" | "connecting" | "reconnecting" | "disconnected"`.
+- `chat.raw` — escape hatch to the underlying `GatewayClient` (and `chat.raw.rawSocket` for the raw `socket.io` socket).
+
+Calling `useGateway()` twice with the same namespace returns the same socket — no duplicate connections.
+
+## `useEmit`
+
+For events you emit from user actions, with loading/error state handled for you:
+
+```vue
+<script setup lang="ts">
+import { useGateway } from "@arkosjs/vue-websockets";
+
+const chat = useGateway("/chat");
+const sendMessage = chat.useEmit("send_message");
+</script>
+
+<template>
+  <button
+    :disabled="sendMessage.loading"
+    @click="sendMessage.emit({ content: 'hello' }, { ack: true })"
+  >
+    Send
+  </button>
+</template>
+```
+
+- `sendMessage.emit(data, options?)` — `{ ack: true }` waits for server acknowledgement and returns a `Promise<{ success, data?, error? }>`; omit it for fire-and-forget.
+- `sendMessage.loading` — reactive, `true` while an acked emit is in flight.
+- `sendMessage.error` — reactive, set if the emit fails or the server returns `{ success: false }`.
+- `sendMessage.lastEmittedAt` — reactive timestamp of the last emit call.
+- `sendMessage.reset()` — clears `error`/`loading` manually.
+
+The emitter is a reactive object, so `sendMessage.loading` updates the template on its own — no `.value`.
+
+## Cleanup
+
+Handled for you — `WebSocketProvider` destroys the underlying client when it unmounts, and every `chat.on()` subscription is torn down when its effect scope is disposed.

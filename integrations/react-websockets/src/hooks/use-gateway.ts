@@ -24,9 +24,7 @@ import { SocketOptions } from "socket.io-client";
  * const sendMessage = chat.useEmit("send_message")
  * sendMessage.emit({ room: "general", content: "hello" })
  *
- * chat.join("room-123")
  * chat.status   // "connected" | "reconnecting" | "disconnected"
- * chat.user     // mirrors socket.user from server auth
  */
 export function useGateway(namespace: string, opts?: Partial<SocketOptions>) {
   const client = useWebsocketClient();

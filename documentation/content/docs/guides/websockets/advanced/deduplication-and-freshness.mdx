@@ -2,7 +2,7 @@
 title: Deduplication and Freshness
 ---
 
-Both features key off `_meta`, a `{ mid, timestamp }` object Arkos expects on incoming payloads and injects automatically on outgoing ones (see [Enhanced Socket](/docs/guides/websockets/enhanced-socket#gotcha-outgoing-_meta-is-injected-automatically)). If you're using the [client Library](/docs/guides/websockets/advanced/frontend-integrations/overview), this is handled for you. If you're emitting from a raw `socket.io-client` connection, you need to send `_meta` yourself for these features to work.
+Both features key off `_meta`, a `{ mid, timestamp }` object Arkos expects on incoming payloads and injects automatically on outgoing ones (see [Enhanced Socket](/docs/guides/websockets/enhanced-socket#gotcha-outgoing-_meta-is-injected-automatically)). If you're using the [client Library](/docs/guides/websockets/frontend-integration/overview), this is handled for you. If you're emitting from a raw `socket.io-client` connection, you need to send `_meta` yourself for these features to work.
 
 ## Deduplication
 

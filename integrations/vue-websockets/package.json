@@ -1,0 +1,41 @@
+{
+  "name": "@arkosjs/vue-websockets",
+  "version": "0.1.0",
+  "description": "Vue bindings for Arkos WebSocket Gateway",
+  "main": "dist/exports/index.js",
+  "module": "dist/exports/index.js",
+  "types": "dist/exports/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "author": "Uanela Como",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uanela/arkos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uanela/arkos/issues"
+  },
+  "homepage": "https://www.arkosjs.com",
+  "scripts": {
+    "build": "rm -rf ./dist && tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^30.1.2",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.4",
+    "vue": "^3.4.0"
+  },
+  "peerDependencies": {
+    "@arkosjs/websockets-client": "^0.2.0",
+    "socket.io-client": "^4.7.0",
+    "vue": "^3.4.0"
+  }
+}

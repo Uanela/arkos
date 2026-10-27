@@ -7,45 +7,60 @@ title: React
 ## Setup
 
 ```tsx
+import { useMemo, useState } from "react";
 import { Manager } from "socket.io-client";
-import { ArkosSocketProvider } from "@arkosjs/react-websockets";
-
-const manager = new Manager("http://localhost:3000", {
-  auth: { token: "your-auth-token" },
-});
+import { WebSocketProvider } from "@arkosjs/react-websockets";
 
 function App() {
+  const [token] = useState("your-auth-token");
+
+  const manager = useMemo(
+    () =>
+      new Manager("http://localhost:3000", {
+        auth: { token },
+        reconnection: true,
+      }),
+    [token]
+  );
+
   return (
-    <ArkosSocketProvider manager={manager}>
+    <WebSocketProvider manager={manager}>
       <Chat />
-    </ArkosSocketProvider>
+    </WebSocketProvider>
   );
 }
 ```
 
-One provider at the root — every `useGateway()` call below it shares the same underlying `WebsocketClient`.
+One provider at the root — every `useGateway()` call below it shares the same underlying `WebsocketClient`. The client is destroyed when the provider unmounts.
+
+<Callout type="info">
+Passing a **new `manager` instance** rebuilds the client and destroys the old one. Memoize the manager on your auth token, as above, and re-authentication works without any extra wiring — the sockets reconnect with the new token. Only the manager's *identity* is compared, so an inline `options` object won't cause repeated rebuilds.
+</Callout>
 
 ## `useGateway`
 
 One hook per namespace:
 
 ```tsx
-function Chat() {
-  const chat = useGateway("/chat");
+import { useGateway } from "@arkosjs/react-websockets";
 
-  useEffect(() => {
-    return chat.on("receive_message", (data) => {
-      setMessages((m) => [...m, data]);
-    });
-  }, [chat]);
+function Chat({ roomId }: { roomId: string }) {
+  const chat = useGateway("/chat");
+  const [messages, setMessages] = useState([]);
+
+  chat.on(
+    "receive_message",
+    (data) => setMessages((m) => [...m, data]),
+    [roomId] // optional: re-subscribe when this changes
+  );
 
   return <div>{chat.status}</div>;
 }
 ```
 
-- `chat.on(event, handler)` — subscribes, cleans up automatically on unmount.
-- `chat.status` — reactive: `"connected" | "reconnecting" | "disconnected"`.
-- `chat.user` — reactive: the user object populated when the server emits `"authenticated"`, or `null`.
+- `chat.on(event, handler, deps?)` — subscribes and cleans up automatically on unmount. The handler is read through a ref, so passing an inline arrow function every render does **not** tear down and re-register the listener; use `deps` when you actually want to re-subscribe (switching rooms, for example).
+- `chat.status` — reactive: `"connected" | "connecting" | "reconnecting" | "disconnected"`.
+- `chat.raw` — escape hatch to the underlying `GatewayClient` (and `chat.raw.rawSocket` for the raw `socket.io` socket).
 
 ## `useEmit`
 
@@ -69,7 +84,7 @@ function MessageInput({ room }: { room: string }) {
 }
 ```
 
-- `sendMessage.emit(data, options?)` — `{ ack: true }` waits for server acknowledgement; omit it for fire-and-forget.
+- `sendMessage.emit(data, options?)` — `{ ack: true }` waits for server acknowledgement and returns a `Promise<{ success, data?, error? }>`; omit it for fire-and-forget.
 - `sendMessage.loading` — reactive, `true` while an acked emit is in flight.
 - `sendMessage.error` — reactive, set if the emit fails or the server returns `{ success: false }`.
 - `sendMessage.lastEmittedAt` — reactive timestamp of the last emit call.
@@ -77,4 +92,6 @@ function MessageInput({ room }: { room: string }) {
 
 ## Cleanup
 
-Handled for you — `ArkosSocketProvider` destroys the underlying client when it unmounts, and every `chat.on()` subscription cleans up when its component unmounts.
+Handled for you — `WebSocketProvider` destroys the underlying client when it unmounts, and every `chat.on()` subscription cleans up when its component unmounts.
+
+Because React's StrictMode mounts effects twice in development, the provider defers that teardown by a tick: a mount/cleanup/mount probe reuses the same client instead of destroying the one the still-mounted tree is rendering with.
