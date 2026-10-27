@@ -116,6 +116,21 @@ describe("TemplateCompiler", () => {
       expect(skippedFiles).not.toContain("login.schema.ts.hbs");
     });
 
+    it('should keep both zod and class-validator files when validation type is "hybrid"', () => {
+      const config: ProjectConfig = {
+        authentication: { type: "static" },
+        validation: { type: "hybrid" },
+        typescript: true,
+      } as ProjectConfig;
+
+      const skippedFiles = templateCompiler.filesToBeSkipped(config);
+
+      expect(skippedFiles).not.toContain("login.schema.ts.hbs");
+      expect(skippedFiles).not.toContain("create-user.schema.ts.hbs");
+      expect(skippedFiles).not.toContain("login.dto.ts.hbs");
+      expect(skippedFiles).not.toContain("create-user.dto.ts.hbs");
+    });
+
     it("should skip tsconfig when typescript is false", () => {
       const config: ProjectConfig = {
         authentication: { type: "static" },

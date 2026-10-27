@@ -102,7 +102,8 @@ class TemplateCompiler {
         ...userZodSchemaFiles,
         ...userClassValidatorDtoFiles,
         "file-upload.auth.ts.hbs",
-        "index.ts.hbs"
+        "index.ts.hbs",
+        "prisma.config.ts.hbs",
       );
 
     if (!config.authentication?.type || config.authentication?.type === "none")
@@ -120,7 +121,7 @@ class TemplateCompiler {
         ...userZodSchemaFiles,
         ...userClassValidatorDtoFiles,
         "file-upload.router.ts.hbs",
-        "file-upload.policy.ts.hbs"
+        "file-upload.policy.ts.hbs",
       );
 
     if (config.authentication?.type === "static")
@@ -129,29 +130,31 @@ class TemplateCompiler {
         ...dynamicAuthZodSchemaFiles,
         ...dynamicAuthClassValidatorDtoFiles,
         ...authPermissionModuleComponents,
-        ...authRoleModuleComponents
+        ...authRoleModuleComponents,
       );
 
-    if (config.validation?.type !== "zod")
+    const validationType = config.validation?.type;
+    const usesZod =
+      validationType === "zod" || validationType === "hybrid";
+    const usesClassValidator =
+      validationType === "class-validator" || validationType === "hybrid";
+
+    if (!usesZod)
       files.push(
         ...sharedAuthZodSchemaFiles,
         ...dynamicAuthZodSchemaFiles,
         ...userZodSchemaFiles,
-        "api-actions.hbs.ts"
       );
 
-    // Ignore class-validator related files when validation is zod
-    if (config.validation?.type !== "class-validator")
+    if (!usesClassValidator)
       files.push(
         ...sharedAuthClassValidatorDtoFiles,
         ...dynamicAuthClassValidatorDtoFiles,
-        ...userClassValidatorDtoFiles
+        ...userClassValidatorDtoFiles,
       );
 
-    // Ignoring typescript related files when typescript false
     if (!config.typescript) files.push(...["tsconfig.json.hbs"]);
 
-    // Ignoring javascript related files when typescript true
     if (config?.typescript) files.push(...["jsconfig.json.hbs"]);
 
     if (config.entryPoint === "src/app") files.push("server.ts.hbs");
@@ -187,7 +190,7 @@ class TemplateCompiler {
         } else if (dirent.name.endsWith(".hbs")) {
           const templatePath = fullPath;
           const template = handlebars.compile(
-            fs.readFileSync(templatePath, "utf8")
+            fs.readFileSync(templatePath, "utf8"),
           );
 
           let arkosCurrentVersion = "{{arkosCurrentVersion}}";
@@ -197,12 +200,12 @@ class TemplateCompiler {
 
           let outputPath = path.join(
             outputDir,
-            relativePath.replace(".hbs", "")
+            relativePath.replace(".hbs", ""),
           );
           if (dirent.name.endsWith(".ts.hbs"))
             outputPath = path.join(
               outputDir,
-              relativePath.replace(".ts.hbs", ext)
+              relativePath.replace(".ts.hbs", ext),
             );
 
           fs.mkdirSync(path.dirname(outputPath), { recursive: true });
@@ -222,3 +225,4 @@ class TemplateCompiler {
 const templateCompiler = new TemplateCompiler();
 
 export default templateCompiler;
+

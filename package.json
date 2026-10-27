@@ -12,18 +12,6 @@
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
-  },
-  "pnpm": {
-    "overrides": {},
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "@scarf/scarf",
-      "core-js",
-      "core-js-pure",
-      "esbuild",
-      "prisma",
-      "sharp"
-    ]
   }
 }
+

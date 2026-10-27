@@ -8,7 +8,7 @@ export interface ProjectConfig {
   argProjectName?: string;
   typescript: boolean;
   validation?: {
-    type?: "zod" | "class-validator";
+    type?: "zod" | "class-validator" | "hybrid";
   };
   authentication?: {
     type?: "static" | "dynamic" | "none";
@@ -17,13 +17,13 @@ export interface ProjectConfig {
   };
   prisma: {
     provider:
-    | "postgresql"
-    | "mysql"
-    | "sqlite"
-    | "sqlserver"
-    | "cockroachdb"
-    | "mongodb"
-    | "none";
+      | "postgresql"
+      | "mysql"
+      | "sqlite"
+      | "sqlserver"
+      | "cockroachdb"
+      | "mongodb"
+      | "none";
     idDatabaseType: string;
     defaultDatabaseUrl: string;
   };
@@ -59,7 +59,7 @@ class ProjectConfigInquirer {
     } else
       this.config.projectPath = path.resolve(
         process.cwd(),
-        this.config.projectName
+        this.config.projectName,
       );
 
     if (process?.argv?.includes?.("--advanced")) this.config.advanced = true;
@@ -67,7 +67,7 @@ class ProjectConfigInquirer {
       this.config.prisma.defaultDatabaseUrl =
         this.config.prisma.defaultDatabaseUrl.replaceAll(
           "{{projectName}}",
-          this.config.projectName
+          this.config.projectName,
         );
 
     return this.config;
@@ -170,7 +170,7 @@ class ProjectConfigInquirer {
         break;
       case "sqlite":
         idDatabaseType = "@id @default(cuid())";
-        defaultDatabaseUrl = "file:../../file.db";
+        defaultDatabaseUrl = "file:./file.db";
         break;
       case "mysql":
         idDatabaseType = "@id @default(uuid())";
@@ -202,7 +202,7 @@ class ProjectConfigInquirer {
 
   private async promptValidation() {
     const choices = this.config.typescript
-      ? ["zod", "class-validator", "none"]
+      ? ["zod", "class-validator", "hybrid", "none"]
       : ["zod", "none"];
 
     const { validationType } = await inquirer.prompt([
@@ -217,16 +217,15 @@ class ProjectConfigInquirer {
 
     if (validationType !== "none") {
       this.config.validation = {
-        type: validationType as "zod" | "class-validator",
+        type: validationType as "zod" | "class-validator" | "hybrid",
       };
     }
-    // validation stays undefined when "none" is chosen — matches original behaviour
   }
 
   private async promptAuthentication() {
     if (this.config.prisma.provider === "none") {
       console.info(
-        `${chalk.green("! ")}${chalk.bold("Skipping authentication setup as it requires prisma.")}`
+        `${chalk.green("! ")}${chalk.bold("Skipping authentication setup as it requires prisma.")}`,
       );
       this.config.authentication = {
         type: "none",
@@ -290,7 +289,7 @@ class ProjectConfigInquirer {
       };
     } else if (this.config.prisma.provider === "sqlite") {
       console.info(
-        `${chalk.green("! ")}${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
+        `${chalk.green("! ")}${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`,
       );
     }
   }
@@ -314,3 +313,4 @@ class ProjectConfigInquirer {
 const projectConfigInquirer = new ProjectConfigInquirer();
 
 export default projectConfigInquirer;
+

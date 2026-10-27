@@ -1,7 +1,5 @@
-import { ZodSchema } from "zod";
+import { ZodType } from "zod";
 
 export type Validator =
-  | ZodSchema
-  | (new (...args: any[]) => object)
-  | null
-  | false;
+  ZodType | (new (...args: any[]) => object) | null | false;
+

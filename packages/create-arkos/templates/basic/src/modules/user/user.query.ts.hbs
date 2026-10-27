@@ -1,11 +1,11 @@
 {{#if typescript}}
 import { PrismaQueryOptions } from 'arkos/prisma';
-import { Prisma } from "@prisma/client"
+import { Prisma } from "@/src/generated/prisma/client"
 
 const userQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
 {{else}}
 /**
- * @type {import("arkos/prisma").PrismaQueryOptions<typeof import("@prisma/client").Prisma.UserDelegate>}
+ * @type {import("arkos/prisma").PrismaQueryOptions<typeof import("@/src/generated/prisma/client").Prisma.UserDelegate>}
  */
 const userQueryOptions = {
 {{/if}}

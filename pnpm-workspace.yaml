@@ -1,10 +1,12 @@
 packages:
   - "packages/*"
   - "integrations/*"
+  - "sandbox/arkos/*"
   - "documentation"
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
+  better-sqlite3: true
   core-js: true
   esbuild: true
   prisma: true
@@ -22,5 +24,6 @@ shamefullyHoist: true
 preferLocal: true
 minimumReleaseAgeExclude:
   - '@arkosjs/websockets-client@0.2.0'
+  - arkos@1.8.0-canary.11
 overrides:
   style-to-js: 1.1.16

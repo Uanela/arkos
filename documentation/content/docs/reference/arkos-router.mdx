@@ -285,7 +285,7 @@ router.post(
         type: "single",
         field: "avatar",
         maxSize: 1024 * 1024 * 5, // 5MB
-        uploadDir: "avatars",
+        uploadDir: "/avatars",
         required: true, // (Defaults) added in v1.5.0
       },
     },
@@ -306,7 +306,7 @@ router.post(
         type: "array",
         field: "photos",
         maxCount: 10,
-        uploadDir: "gallery",
+        uploadDir: "/gallery",
         allowedFileTypes: [".jpg", ".png", ".webp"],
         required: true, // (Defaults) added in v1.5.0
       },
@@ -331,7 +331,7 @@ router.post(
           { name: "images", maxCount: 5 },
           { name: "documents", maxCount: 3 },
         ],
-        uploadDir: "products",
+        uploadDir: "/products",
         required: false, // Optinal files, added in v1.5.0
       },
     },
@@ -353,7 +353,7 @@ router.post(
       uploads: {
         type: "single",
         field: "profile[photo]", // Nested field notation
-        uploadDir: "users-profile",
+        uploadDir: "/users-profile",
         required: false, // Optinal user photo, added in v1.5.0
       },
     },
@@ -396,7 +396,7 @@ router.post(
           { name: "documents[manual]", maxCount: 1 },
           { name: "documents[warranty]", maxCount: 1 },
         ],
-        uploadDir: "products",
+        uploadDir: "/products",
       },
     },
   },
@@ -435,7 +435,7 @@ router.post(
       uploads: {
         type: "single",
         field: "company[details][logo]", // Deep nesting
-        uploadDir: "company-logos",
+        uploadDir: "/company-logos",
       },
     },
   },
@@ -471,6 +471,11 @@ router.post(
 | `field`            | `string`                                 | Form field name (single/array)         | -                          |
 | `fields`           | `Array<{name, maxCount}>`                | Multiple field config (fields type)    | -                          |
 | `uploadDir`        | `string`                                 | Storage directory                      | Auto-detected by MIME type |
+| `urlPath`          | `string \| { exact: string }`            | Public URL folder relative to `baseRoute`, or an exact static URL (v1.8.0-rc+) | `/${uploadDir}` |
+| `serve`            | `boolean`                                | Set to `false` to opt out of `"registered"` serving (v1.8.0-rc+) | - |
+| `prepare`          | `UploadPrepare`                          | Resolves `{ dirParams }` for dynamic `uploadDir` (v1.8.0-rc+) | Required for dynamic folders |
+| `prepareFile`      | `UploadPrepareFile`                      | Per-file `{ filename }` preparation; extension is preserved (v1.8.0-rc+) | - |
+| `overwrite`        | `boolean`                                | Fail with `409 Conflict` instead of replacing an existing file (v1.8.0-rc+) | `true` |
 | `required`         | `boolean` (from 1.5.0+)                  | Require or not                         | true                       |
 | `maxSize`          | `number`                                 | Max file size in bytes                 | From global config         |
 | `maxCount`         | `number`                                 | Max files (array type)                 | -                          |
@@ -1007,7 +1012,7 @@ router.post(
       uploads: {
         type: "single",
         field: "featuredImage",
-        uploadDir: "post-images",
+        uploadDir: "/post-images",
         maxSize: 1024 * 1024 * 5,
       },
       openapi: {

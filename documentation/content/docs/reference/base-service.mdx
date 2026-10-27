@@ -9,7 +9,7 @@ The `BaseService` class is a fundamental component that provides standardized CR
 
 - Provide consistent, reusable data access methods across all models
 - Handle common operations like relation management and error handling
-- Support for [Service Hooks](/docs/core-concepts/components/service-hooks) to execute custom logic
+- Support for [Service Override](/docs/core-concepts/components/service-override) to execute custom logic
 - Allow for model-specific overrides and extensions
 - Reduce code duplication in service implementations
 - Full TypeScript support with automatic type inference (v1.4.0+)
@@ -170,7 +170,7 @@ async createOne<TOptions>(
 
 - Automatically hashes passwords for User model
 - Handles relation fields (connect, create, connectOrCreate)
-- Executes [before/after/error hooks](/docs/core-concepts/components/service-hooks)
+- Can be customized through a [Service Override](/docs/core-concepts/components/service-override)
 
 **Example:**
 
@@ -892,45 +892,32 @@ const userService = new UserService("user");
 export default userService;
 ```
 
-You can then use [**Service Hooks**](/docs/core-concepts/components/service-hooks) to customize every|some calls of `createOne` method:
+You can then customize every call of `createOne` with a [Service Override](/docs/core-concepts/components/service-override):
 
 ```ts
-// src/modules/user/user.hooks.ts
-import {
-  BeforeCreateOneHookArgs,
-  AfterCreateOneHookArgs,
-} from "arkos/services";
+// src/modules/user/user.service.ts
+import { BaseService } from "arkos/services";
 import { Prisma } from "@prisma/client";
 import { AppError } from "arkos/error-handler";
-import userService from "./user.service";
 import emailService from "../email/email.service";
 
-export const beforeCreateOne = [
-  async ({
-    data,
-    queryOptions,
-    context,
-  }: BeforeCreateOneHookArgs<Prisma.UserDelegate>) => {
+class UserService extends BaseService<"user"> {
+  // @ts-expect-error
+  async createOne(data: Prisma.UserCreateInput, queryOptions?: any) {
     if (!data.email) throw new AppError("Email is required", 400);
 
-    const existing = await userService.findOne({ email: data.email });
+    const existing = await this.findOne({ email: data.email });
     if (existing) throw new AppError("Email already in use", 400);
-  },
-];
 
-export const afterCreateOne = [
-  async ({
-    result,
-    data,
-    queryOptions,
-    context,
-  }: AfterCreateOneHookArgs<Prisma.UserDelegate>) => {
-    await emailService.sendWelcomeEmail({
-      to: result.email,
-      name: result.name,
-    });
-  },
-];
+    const user = await super.createOne(data, queryOptions);
+
+    await emailService.sendWelcomeEmail({ to: user.email, name: user.name });
+
+    return user;
+  }
+}
+
+export default new UserService("user");
 ```
 
 ## Best Practices
@@ -961,17 +948,17 @@ class PostService extends BaseService<"post"> {
 }
 ```
 
-### 3. Use Service Hooks for Business Logic
+### 3. Override Methods for Business Logic
 
-Instead of overriding methods, use hooks when possible:
+Override the method that owns the operation, and call `super` when you still want the default behavior:
 
 ```typescript
-// ✅ Better: Use hooks (post.hooks.ts)
-export const beforeCreateOne = [
-  async ({ data, context }) => {
+class PostService extends BaseService<"post"> {
+  async createOne(data: any, queryOptions?: any) {
     if (!data.slug) data.slug = generateSlug(data.title);
-  },
-];
+    return super.createOne(data, queryOptions);
+  }
+}
 ```
 
 ### 4. Handle Transactions Properly
@@ -1094,7 +1081,7 @@ class PostService extends BaseService<"post"> {
 
 ## Related Documentation
 
-- **[Service Hooks](/docs/core-concepts/components/service-hooks)** - Execute custom logic during CRUD operations
+- **[Service Override](/docs/core-concepts/components/service-override)** - Execute custom logic during CRUD operations
 - **[Interceptor Middlewares](/docs/core-concepts/components/interceptors)** - HTTP-level request/response processing
 - **[Adding Custom Routers](/docs/core-concepts/routing/setup)** - Create custom API endpoints
 - **[Request Handling Pipeline](/docs/reference/request-handling-pipeline)** - Understand how requests flow through Arkos

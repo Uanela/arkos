@@ -12,7 +12,7 @@ import {
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import { baseOptions, gitConfig } from "@/lib/layout.shared";
 import { useFumadocsLoader } from "fumadocs-core/source/client";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { LLMCopyButton, ViewOptions } from "@/components/ai/page-actions";
 
 export const Route = createFileRoute("/docs/$")({
@@ -67,12 +67,12 @@ const serverLoader = createServerFn({
           0,
           contents?.[0].content.toLowerCase().startsWith("> available from")
             ? 3
-            : 2
+            : 2,
         )
         .map((c) =>
           c.content.toLowerCase().startsWith("> available from")
             ? undefined
-            : c.content
+            : c.content,
         )
         .filter(Boolean)
         .join(". ") ||
@@ -97,7 +97,7 @@ const clientLoader = browserCollections.docs.createClientLoader({
     }: {
       url: string;
       path: string;
-    }
+    },
   ) {
     return (
       <DocsPage toc={toc} className="pb-24">
@@ -124,7 +124,14 @@ const clientLoader = browserCollections.docs.createClientLoader({
 
 function Page() {
   const data = useFumadocsLoader(Route.useLoaderData())!;
-  const top = 92; // 56 normal, with annoucment banner 92
+  const [top, setTop] = useState(56);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasBanner = !!document.getElementById("announcement-banner");
+      setTop(hasBanner ? 92 : 56);
+    }
+  }, []);
 
   return (
     <DocsLayout
@@ -134,20 +141,19 @@ function Page() {
         collapsible: false,
         footer: false,
         tabs: false,
-        className: "overflow-auto pb-16",
+        className: `overflow-auto pb-32`,
       }}
       searchToggle={{ enabled: false }}
       links={[]}
       tree={data.pageTree}
       githubUrl={undefined}
       containerProps={{
-        style: {
-          top,
-        },
-        className: "h-[calc(100vh-60px)] w-full fixed overflow-auto pb-8",
+        style: { top },
+        className: "h-[calc(100vh-0px)] w-full fixed overflow-auto pb-8",
       }}
     >
       <Suspense>{clientLoader.useContent(data.path, data)}</Suspense>
     </DocsLayout>
   );
 }
+

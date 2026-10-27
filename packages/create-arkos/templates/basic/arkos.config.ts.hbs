@@ -17,6 +17,9 @@ const arkosConfig = defineConfig({
   routers: {
     strict: "no-bulk"
   },
+  fileUpload: {
+    serving: "registered",
+  },
   {{#if validation.type}}
   validation: {
     resolver: '{{validation.type}}'

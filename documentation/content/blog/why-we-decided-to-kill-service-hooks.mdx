@@ -138,4 +138,4 @@ A lot of the old hook logic existed purely to get `req.user` somewhere a hook co
 
 This wasn't originally scoped as a 1.8 change. It started as a preview feature on the v2 branch, where bigger API shifts were fair game. Once it worked there, it became clear it wasn't a breaking change at all — `service` on `RouteHook` is additive and opt-in; modules that don't provide one keep using the default `BaseService` exactly as before. DX improvements that clean and that low-risk didn't need to wait for a major version, so it got backported to `1.8.0-canary.1` instead.
 
-If you're ready to move a module over yourself, the step-by-step walkthrough is here: [Migrating From `.hooks.ts` To The Route Hook Service Approach](/blog/migrating-service-hooks-to-route-hook-service).
+If you're ready to move a module over yourself, the step-by-step walkthrough is here: [Migrating From `.hooks.ts` To Service Override](/blog/migrating-service-hooks-to-route-hook-service).

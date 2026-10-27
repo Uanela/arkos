@@ -72,6 +72,11 @@ export function setupRouters(
         return (dtos as any)?.[key];
       } else if (validationConfigs?.resolver === "zod") {
         return (schemas as any)?.[key];
+      } else if (validationConfigs?.resolver === "hybrid") {
+        const dto = (dtos as any)?.[key];
+        const schema = (schemas as any)?.[key];
+        if (dto && schema) return undefined;
+        return dto ?? schema;
       }
       return undefined;
     };

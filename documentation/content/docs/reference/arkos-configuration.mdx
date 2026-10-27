@@ -334,6 +334,7 @@ const arkosConfig: ArkosConfig = {
   fileUpload: {
     baseUploadDir: "/uploads",
     baseRoute: "/api/uploads",
+    serving: "registered",
     expressStatic: {
       maxAge: "1y",
       etag: true,
@@ -344,6 +345,11 @@ const arkosConfig: ArkosConfig = {
         maxSize: 5 * 1024 * 1024, // 5MB
         supportedFilesRegex: /\.(jpg|jpeg|png|gif|webp)$/,
       },
+    },
+  },
+  warnings: {
+    fileUpload: {
+      suppressUnusedUrlParams: true,
     },
   },
 };
@@ -384,15 +390,42 @@ arkos.init({
 - **Default**: `"/api/uploads"`
 - **Description**: Base route for file access
 
+#### `fileUpload.serving`
+
+> Available from v1.8.0-rc
+
+- **Type**: `"all" | "registered"`
+- **Default**: `"all"`
+- **Description**: Controls which upload directories are publicly served by the built-in `findFile` endpoint. With `"all"`, every folder under `baseUploadDir` is served. With `"registered"`, only the built-in `images`, `videos`, `documents`, and `files` roots are served; any other folder must be registered explicitly with `arkos.serveUploadDir()` (or opted out with `serve: false`).
+
 #### `fileUpload.expressStatic`
 
 - **Type**: `Parameters<typeof express.static>[1]`
-- **Description**: Options for express.static middleware
+- **Description**: Options for express.static middleware, including for directories registered with `arkos.serveUploadDir()`
 
 #### `fileUpload.restrictions`
 
 - **Type**: Object containing file type restrictions
 - **Description**: Upload restrictions for different file types
+
+#### `warnings.fileUpload.suppressUnusedUrlParams`
+
+> Available from v1.8.0-rc
+
+- **Type**: `boolean`
+- **Default**: `false`
+- **Description**: Suppresses the startup warning for upload `urlPath` values that declare `:params` the disk directory template never uses. The warning never blocks startup.
+
+```typescript
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  warnings: {
+    fileUpload: {
+      suppressUnusedUrlParams: true,
+    },
+  },
+};
+```
 
 ### Middleware Configuration
 

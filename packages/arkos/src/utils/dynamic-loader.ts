@@ -1,4 +1,4 @@
-import { ZodTypeAny } from "zod";
+import { ZodType } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
@@ -26,7 +26,7 @@ let prismaModelsModules: Record<string, AppModuleComponent> = {};
 /** This was a workaround when testing and also when cjs was generated while `prismaModelsModules` was exported there where some problems */
 export function setModuleComponents(
   modelName: string,
-  modules: AppModuleComponent
+  modules: AppModuleComponent,
 ) {
   prismaModelsModules[pascalCase(modelName)] = modules;
 }
@@ -61,46 +61,46 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
     },
     dtos: isAuthModule
       ? {
-        login: `login.dto.${ext}`,
-        signup: `signup.dto.${ext}`,
-        getMe: `get-me.dto.${ext}`,
-        updateMe: `update-me.dto.${ext}`,
-        updatePassword: `update-password.dto.${ext}`,
-      }
+          login: `login.dto.${ext}`,
+          signup: `signup.dto.${ext}`,
+          getMe: `get-me.dto.${ext}`,
+          updateMe: `update-me.dto.${ext}`,
+          updatePassword: `update-password.dto.${ext}`,
+        }
       : {
-        model: `${kebabModelName}.dto.${ext}`,
-        create: `create-${kebabModelName}.dto.${ext}`,
-        createOne: `create-${kebabModelName}.dto.${ext}`, // just for sake of completion and reusability around other parts of code
-        createMany: ``,
-        update: `update-${kebabModelName}.dto.${ext}`,
-        updateOne: `update-${kebabModelName}.dto.${ext}`, // same as createOne
-        updateMany: ``,
-        query: ``,
-        // looking for some better naming convetion
-        findOne: ``,
-        findMany: ``,
-      },
+          model: `${kebabModelName}.dto.${ext}`,
+          create: `create-${kebabModelName}.dto.${ext}`,
+          createOne: `create-${kebabModelName}.dto.${ext}`, // just for sake of completion and reusability around other parts of code
+          createMany: ``,
+          update: `update-${kebabModelName}.dto.${ext}`,
+          updateOne: `update-${kebabModelName}.dto.${ext}`, // same as createOne
+          updateMany: ``,
+          query: ``,
+          // looking for some better naming convetion
+          findOne: ``,
+          findMany: ``,
+        },
     schemas: isAuthModule
       ? {
-        login: `login.schema.${ext}`,
-        signup: `signup.schema.${ext}`,
-        getMe: `get-me.schema.${ext}`,
-        updateMe: `update-me.schema.${ext}`,
-        updatePassword: `update-password.schema.${ext}`,
-      }
+          login: `login.schema.${ext}`,
+          signup: `signup.schema.${ext}`,
+          getMe: `get-me.schema.${ext}`,
+          updateMe: `update-me.schema.${ext}`,
+          updatePassword: `update-password.schema.${ext}`,
+        }
       : {
-        model: `${kebabModelName}.schema.${ext}`,
-        create: `create-${kebabModelName}.schema.${ext}`,
-        createOne: `create-${kebabModelName}.schema.${ext}`,
-        createMany: ``, // just for sake of completion and reusability around other parts of code
-        update: `update-${kebabModelName}.schema.${ext}`,
-        updateOne: `update-${kebabModelName}.schema.${ext}`, // same as createOne
-        updateMany: ``,
-        query: ``,
-        // looking for some better naming convetion
-        findOne: ``,
-        findMany: ``,
-      },
+          model: `${kebabModelName}.schema.${ext}`,
+          create: `create-${kebabModelName}.schema.${ext}`,
+          createOne: `create-${kebabModelName}.schema.${ext}`,
+          createMany: ``, // just for sake of completion and reusability around other parts of code
+          update: `update-${kebabModelName}.schema.${ext}`,
+          updateOne: `update-${kebabModelName}.schema.${ext}`, // same as createOne
+          updateMany: ``,
+          query: ``,
+          // looking for some better naming convetion
+          findOne: ``,
+          findMany: ``,
+        },
   };
 }
 
@@ -111,13 +111,13 @@ export function isClass(value: any): boolean {
   );
 }
 
-export function isZodSchema(value: any): value is ZodTypeAny {
-  return value?._def?.typeName?.startsWith("Zod");
+export function isZodSchema(value: any): value is ZodType {
+  return value instanceof ZodType;
 }
 
 export async function processSubdir(
   modelName: string,
-  type: "dtos" | "schemas"
+  type: "dtos" | "schemas",
 ) {
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
@@ -142,17 +142,17 @@ export async function processSubdir(
                 killServerChildProcess();
                 process.exit(1);
               }
-            }
+            },
           );
 
           const cleanFilePath = `src/modules/${kebabCase(modelName)}/${fileName}`;
           if (type === "dtos" && !isClass(module?.default))
             throw ExitError(
-              `ValidationError: Please export as default a valid class under ${cleanFilePath}, in order to use as Dto.`
+              `ValidationError: Please export as default a valid class under ${cleanFilePath}, in order to use as Dto.`,
             );
           else if (type === "schemas" && !isZodSchema(module?.default))
             throw ExitError(
-              `ValidationError: Please export as default a valid zod schema under ${cleanFilePath}, in order to use as Schema`
+              `ValidationError: Please export as default a valid zod schema under ${cleanFilePath}, in order to use as Schema`,
             );
 
           if (module && module?.default) result[key] = module.default;
@@ -160,7 +160,7 @@ export async function processSubdir(
           if (err?.message?.includes("ValidationError")) throw err;
           console.error(err);
         }
-      })
+      }),
     );
   } catch (err: any) {
     if (err?.message?.includes("ValidationError")) throw err;
@@ -170,14 +170,42 @@ export async function processSubdir(
   return result;
 }
 
+/**
+ * Warns when, under the "hybrid" validation resolver, both a dto and a schema
+ * file were found for the same validation key, since neither will be
+ * automatically applied in that case.
+ */
+export function warnHybridValidationConflicts(
+  modelName: string,
+  fileStructure: ReturnType<typeof getFileModuleComponentsFileStructure>,
+  dtos: Record<string, any>,
+  schemas: Record<string, any>,
+) {
+  Object.keys(dtos).forEach((key) => {
+    if (!(key in schemas)) return;
+
+    const dtoFileName = (fileStructure.dtos as any)[key];
+    const schemaFileName = (fileStructure.schemas as any)[key];
+
+    sheu.warn(
+      `Found both ${dtoFileName} and ${schemaFileName}, none of them will be automatically used.`,
+      { timestamp: true },
+    );
+  });
+}
+
 export type ModuleComponents = ImportModuleComponentsReturnType;
 
-type ImportModuleComponentsReturnType = {
+type ImportModuleComponentsReturnType<ModuleType extends string = any> = {
   hooks?: Record<string, ServiceHook | ServiceHook[]>;
   interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
   prismaQueryOptions?: PrismaQueryOptions<any>;
-  router?: { config?: RouteHook<any>; hook?: RouteHook<any>; default: any; };
+  router?: {
+    config?: RouteHook<ModuleType>;
+    hook?: RouteHook<ModuleType>;
+    default: any;
+  };
   dtos?: {
     create?: any;
     createOne?: any;
@@ -211,29 +239,34 @@ export function assignModuleToResult(
   key: keyof ModuleComponents,
   module: any,
   result: ImportModuleComponentsReturnType,
-  arkosConfig: UserArkosConfig
+  arkosConfig: UserArkosConfig,
 ): void {
   const ext = getUserFileExtension();
   const filenameTempalte = `${kebabCase(appModule)}.suffix.${ext}`;
 
-  if (key === "authConfigs") {
+  if (key === "authConfigs")
     sheu.warn(
       `${kebabCase(appModule)}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`,
-      { timestamp: true }
+      { timestamp: true },
     );
-  }
+
+  if (key === "hooks")
+    sheu.warn(
+      `${kebabCase(appModule)}.hooks.${ext} is deprecated and will be removed in v2.0, please migrate it to RouteHook see https://www.arkosjs.com/blog/how-to-service-hooks-to-route-hooks-v1`,
+      { timestamp: true },
+    );
 
   if (key === "interceptors") result.interceptors = module;
   else if (key === "router") {
     if (module?.hook && module?.config)
       throw ExitError(
-        `Error at ${filenameTempalte.replace("suffix", "router")}, you cannot use both 'export hook' and 'export config' please use only 'export hook' as the other is deprecated`
+        `Error at ${filenameTempalte.replace("suffix", "router")}, you cannot use both 'export hook' and 'export config' please use only 'export hook' as the other is deprecated`,
       );
 
     if (!module?.hook && module?.config)
       sheu.warn(
         `Found deprecated 'export config' at ${filenameTempalte.replace("suffix", "router")}, please use 'export hook' instead, see https://www.arkosjs.com/docs/core-concepts/components/route-hooks`,
-        { timestamp: true }
+        { timestamp: true },
       );
 
     result[key] = {
@@ -241,12 +274,12 @@ export function assignModuleToResult(
       config: applyStrictRoutingRules(
         appModule,
         arkosConfig,
-        module?.hook || module?.config || {}
+        module?.hook || module?.config || {},
       ),
     };
     validateRouterConfigConsistency(
       kebabCase(appModule),
-      result[key]?.hook || result[key]?.config || {}
+      result[key]?.hook || result[key]?.config || {},
     );
   } else {
     result[key as keyof typeof result] = module.default || module;
@@ -263,7 +296,7 @@ export function assignModuleToResult(
 export async function importModuleComponents(
   modelName: string,
   arkosConfig: UserArkosConfig,
-  moduleDirExists?: boolean
+  moduleDirExists?: boolean,
 ): Promise<ImportModuleComponentsReturnType> {
   const result: ImportModuleComponentsReturnType = {
     dtos: {},
@@ -278,14 +311,31 @@ export async function importModuleComponents(
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
   const fileStructure = getFileModuleComponentsFileStructure(modelName);
 
-  const validationSubdir = arkosConfig.validation?.resolver
-    ? arkosConfig.validation.resolver === "zod"
+  const resolver = arkosConfig.validation?.resolver;
+  const isHybridValidation = resolver === "hybrid";
+  const validationSubdir = resolver
+    ? resolver === "zod"
       ? "schemas"
-      : "dtos"
+      : isHybridValidation
+        ? null
+        : "dtos"
     : null;
 
-  const [validators] = await Promise.all([
-    validationSubdir && processSubdir(modelName, validationSubdir),
+  const [validationResult] = await Promise.all([
+    (async () => {
+      if (isHybridValidation) {
+        const [dtos, schemas] = await Promise.all([
+          processSubdir(modelName, "dtos"),
+          processSubdir(modelName, "schemas"),
+        ]);
+        warnHybridValidationConflicts(modelName, fileStructure, dtos, schemas);
+        return { dtos, schemas };
+      }
+
+      if (!validationSubdir) return undefined;
+
+      return { [validationSubdir]: await processSubdir(modelName, validationSubdir) };
+    })(),
     ...Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       if (
         ["createMany", "findMany", "findOne", "updateMany"].includes(key) ||
@@ -317,7 +367,7 @@ export async function importModuleComponents(
               killServerChildProcess();
               process.exit(1);
             }
-          } catch (err) { }
+          } catch (err) {}
         });
 
         if (!module && key === "router" && usingStrictRouting) module = {};
@@ -329,7 +379,7 @@ export async function importModuleComponents(
             key as any,
             module,
             result,
-            arkosConfig
+            arkosConfig,
           );
         }
       } catch (err: any) {
@@ -342,12 +392,12 @@ export async function importModuleComponents(
 
   prismaModelsModules[pascalCase(modelName)] = {
     ...result,
-    ...(validationSubdir && { [validationSubdir]: validators }),
+    ...validationResult,
   };
 
   return {
     ...result,
-    ...(validationSubdir && { [validationSubdir]: validators }),
+    ...validationResult,
   };
 }
 
@@ -356,7 +406,7 @@ export const appModules = Array.from(
     "auth",
     "file-upload",
     ...(prismaSchemaParser.getModelsAsArrayOfStrings() || []),
-  ])
+  ]),
 );
 
 /**
@@ -372,10 +422,10 @@ export async function loadAllModuleComponents() {
         crd(),
         "src",
         "modules",
-        kebabCase(appModule)
+        kebabCase(appModule),
       );
       if (await pathExists(moduleDir)) moduleDirExists.push(appModule);
-    })
+    }),
   );
 
   const modulesComponentsImportPromises = appModules.map(
@@ -383,8 +433,8 @@ export async function loadAllModuleComponents() {
       await importModuleComponents(
         appModule,
         arkosConfig,
-        moduleDirExists.includes(appModule)
-      )
+        moduleDirExists.includes(appModule),
+      ),
   );
 
   const modulesComponents = await Promise.all(modulesComponentsImportPromises);
@@ -394,7 +444,7 @@ export async function loadAllModuleComponents() {
         crd(),
         "src",
         "modules",
-        kebabCase(appModules[i])
+        kebabCase(appModules[i]),
       );
 
       return {
@@ -402,7 +452,7 @@ export async function loadAllModuleComponents() {
         moduleDir,
         components,
       };
-    })
+    }),
   );
   debuggerService.logDynamicLoadedModulesComponents(
     modulesComponents.map((components, i) => {
@@ -410,7 +460,7 @@ export async function loadAllModuleComponents() {
         crd(),
         "src",
         "modules",
-        kebabCase(appModules[i])
+        kebabCase(appModules[i]),
       );
 
       return {
@@ -418,7 +468,7 @@ export async function loadAllModuleComponents() {
         moduleDir,
         components,
       };
-    })
+    }),
   );
 }
 
@@ -441,8 +491,8 @@ const DEPRECATION_GROUPS = [
   // {
   //   key: "hooks",
   //   fileKey: (moduleName: string, ext: string) => `${moduleName}.hooks.${ext}`,
-  //   label: "Service Hooks (.hooks.ts)",
-  //   migration: "https://www.arkosjs.com/blog/hooks-to-service-hook",
+  //   label: `Service Hooks (.hooks.${getUserFileExtension()})`,
+  //   migration: "https://www.arkosjs.com/blog/hooks-to-route-hook-v1",
   // },
   // {
   //   key: "prismaQueryOptions",
@@ -482,7 +532,7 @@ export function warnDeprecatedModuleComponents(
   modulesComponents: {
     moduleName: string;
     components: ImportModuleComponentsReturnType;
-  }[]
+  }[],
 ) {
   const ext = getUserFileExtension();
 
@@ -497,11 +547,13 @@ export function warnDeprecatedModuleComponents(
 
       if (group.key === "dtos" || group.key === "schemas") {
         const dtos = components[group.key] || {};
-        const routerConfig = components.router?.config as any || {};
+        const routerConfig = (components.router?.config as any) || {};
         const hasUnused = Object.keys(dtos).some((validatorName: any) => {
           if (["create", "update"].includes(validatorName)) return;
           const config = routerConfig[validatorName] || {};
-          return config?.validation?.body === undefined && config?.disabled !== true;
+          return (
+            config?.validation?.body === undefined && config?.disabled !== true
+          );
         });
         found = hasUnused;
       } else if (group.key === "routerConfig") {
@@ -533,7 +585,7 @@ export function warnDeprecatedModuleComponents(
     if (group.files.length === 0) continue;
     sheu.warn(
       `Found ${group.label.toLowerCase()} at the filepaths bellow, those patterns will stop auto loading in v2.0:`,
-      { timestamp: true }
+      { timestamp: true },
     );
     console.warn(group.files.join(", "));
     // for (const file of group.files) {
@@ -542,3 +594,4 @@ export function warnDeprecatedModuleComponents(
     console.warn(`See migration guide at ${group.migration}\n`);
   }
 }
+
