@@ -23,7 +23,7 @@ describe("getSwaggerDefaultConfig", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (capitalize as jest.Mock).mockImplementation(
-      (str) => str.charAt(0).toUpperCase() + str.slice(1)
+      (str) => str.charAt(0).toUpperCase() + str.slice(1),
     );
   });
 
@@ -37,7 +37,7 @@ describe("getSwaggerDefaultConfig", () => {
     expect(result).toHaveProperty("strict", false);
     expect(result.options.definition.info.title).toBe("Powered By Arkos.js");
     expect(result.options.definition.servers[0].url).toBe(
-      "http://localhost:3000"
+      "http://localhost:3000",
     );
   });
 
@@ -51,7 +51,7 @@ describe("getSwaggerDefaultConfig", () => {
     const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(
-      result.options.definition.components.securitySchemes.BearerAuth
+      result.options.definition.components.securitySchemes.BearerAuth,
     ).toEqual({
       type: "http",
       scheme: "bearer",
@@ -64,7 +64,7 @@ describe("getSwaggerDefaultConfig", () => {
     const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(result.options.definition.servers[0].description).toBe(
-      "Local Production Server"
+      "Local Production Server",
     );
     expect(capitalize).toHaveBeenCalledWith("production");
   });
@@ -74,7 +74,7 @@ describe("getSwaggerDefaultConfig", () => {
     const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(result.options.definition.servers[0].description).toBe(
-      "Local Development Server"
+      "Local Development Server",
     );
     expect(capitalize).toHaveBeenCalledWith("development");
   });
@@ -100,7 +100,7 @@ describe("getSwaggerDefaultConfig", () => {
       },
       pageTitle: "Arkos.js API Documentation",
       cdn: "/api/scalar-api-reference/browser/standalone.js",
-      customCss: `.scalar-client {
+      customCss: `.scalar-app-client {
 width: 100vw !important;
 height: 100vh !important;
 max-width: 100vw !important;
@@ -113,3 +113,4 @@ border-radius: 0 !important;
     });
   });
 });
+

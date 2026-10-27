@@ -1,4 +1,4 @@
-import { ArkosPrismaService } from '../../exports/services';
+import { ArkosPrismaService, AuthService } from '../../exports/services';
 import ExitError from '../../utils/helpers/exit-error';
 import {
   ArkosModuleType,
@@ -37,9 +37,10 @@ export function ArkosRouteHook<T extends ArkosModuleType>(
   moduleName: T,
   configs?: {
     /**
-     * ArkosPrismaService instace for such model
+     * `ArkosPrismaService` instance for such model, or an `AuthService`
+     * subclass instance when `moduleName` is `"auth"`.
      */
-    service?: ArkosPrismaService<T>;
+    service?: T extends 'auth' ? AuthService : ArkosPrismaService<T>;
   },
 ): ArkosRouteHookReturn<T> {
   const store: InterceptorStore = {};
@@ -49,10 +50,17 @@ export function ArkosRouteHook<T extends ArkosModuleType>(
     return proxy;
   };
 
-  if (configs?.service && !(configs.service instanceof ArkosPrismaService))
-    throw ExitError(
-      `Invalid service configured for model "${moduleName}": expected an instance of BaseService, please make your service object extend the BaseService class see https://www.arkosjs.com/docs/reference/base-service`,
-    );
+  if (configs?.service) {
+    if (moduleName === 'auth') {
+      if (!(configs.service instanceof AuthService))
+        throw ExitError(
+          `Invalid service configured for "auth": expected an instance of AuthService, please make your service object extend the AuthService class.`,
+        );
+    } else if (!(configs.service instanceof ArkosPrismaService))
+      throw ExitError(
+        `Invalid service configured for model "${moduleName}": expected an instance of ArkosPrismaService, please make your service object extend the ArkosPrismaService class see https://www.arkosjs.com/docs/reference/base-service`,
+      );
+  }
 
   const base = {
     __type: 'ArkosRouteHook' as const,

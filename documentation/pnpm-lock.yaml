@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  style-to-js: 1.1.16
+
 importers:
 
   .:
@@ -1441,8 +1444,8 @@ packages:
   httpxy@0.5.5:
     resolution: {integrity: sha512-uDjmnPyp1q4Sgzf3w+J/Fc6UqcCEj0x4Wjp7OqK5dGhNeDgpyrAmnS6ey8QWrX3SWDon2DMKf9sBa5X9+CVyMA==}
 
-  inline-style-parser@0.1.1:
-    resolution: {integrity: sha512-7NXolsK4CAS5+xvdj5OMMbI962hU/wvwoxk+LWR9Ek9bVtyuuYScDN6eS0rUm6TxApFpw7CX1o4uJzcd4AyD3Q==}
+  inline-style-parser@0.2.4:
+    resolution: {integrity: sha512-0aO8FkhNZlj/ZIbNi7Lxxr12obT7cL1moPfE4tg1LkX7LlLfC6DeX4l2ZEud1ukP9jNQyNnfzQVqwbwmAATY4Q==}
 
   is-alphabetical@2.0.1:
     resolution: {integrity: sha512-FWyyY60MeTNyeSRpkM2Iry0G9hpr7/9kD40mD/cGQEuilcZYS4okz8SN2Q6rLCJ8gbCt6fN+rC+6tMGS99LaxQ==}
@@ -1996,8 +1999,8 @@ packages:
     resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
     engines: {node: '>=0.10.0'}
 
-  readdirp@5.0.0:
-    resolution: {integrity: sha512-9u/XQ1pvrQtYyMpZe7DXKv2p5CNvyVwzUB6uhLAnQwHMSgKMBR62lc7AHljaeteeHXn11XTAaLLUVZYVZyuRBQ==}
+  readdirp@5.1.1:
+    resolution: {integrity: sha512-Kko+Y5XQ6fM+Ce3dq3m9YGxnacYZYl9cA1wZjaF3Vbry2L3i1qVg8+CAgNPsXRArPMUMCaOR7oa9Nqntc43JKA==}
     engines: {node: '>= 20.19.0'}
 
   recma-build-jsx@1.0.0:
@@ -2119,11 +2122,11 @@ packages:
   stringify-entities@4.0.4:
     resolution: {integrity: sha512-IwfBptatlO+QCJUo19AqvrPNqlVMpW9YEL2LIVY+Rpv2qsjCGxaDLNRgeGsQWJhfItebuJhsGSLjaBbNSQ+ieg==}
 
-  style-to-js@1.0.0:
-    resolution: {integrity: sha512-OiaJVLD+ybcul+6oAdwTOKLFewvYapPLG4H3JiYBYUS0yoi29Ag1IiqprbVARaxiAXvkk+4B8aNcG7lyEDKebg==}
+  style-to-js@1.1.16:
+    resolution: {integrity: sha512-/Q6ld50hKYPH3d/r6nr117TZkHR0w0kGGIVfpG9N6D8NymRPM9RqCUv4pRpJ62E5DqOYx2AFpbZMyCPnjQCnOw==}
 
-  style-to-object@0.3.0:
-    resolution: {integrity: sha512-CzFnRRXhzWIdItT3OmF8SQfWyahHhjq3HwcMNCNLn+N7klOOqPjMeG/4JSu77D7ypZdGvSzvkrbyeTMizz2VrA==}
+  style-to-object@1.0.8:
+    resolution: {integrity: sha512-xT47I/Eo0rwJmaXC4oilDGDWLohVhR6o/xAQcPQN8q6QBuZVL8qMYL85kLmST5cPjAorwvqIA4qXTRQoYHaL6g==}
 
   tailwind-merge@3.6.0:
     resolution: {integrity: sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==}
@@ -3368,7 +3371,7 @@ snapshots:
 
   chokidar@5.0.0:
     dependencies:
-      readdirp: 5.0.0
+      readdirp: 5.1.1
 
   class-variance-authority@0.7.1:
     dependencies:
@@ -3692,7 +3695,7 @@ snapshots:
       mdast-util-mdxjs-esm: 2.0.1
       property-information: 7.2.0
       space-separated-tokens: 2.0.2
-      style-to-js: 1.0.0
+      style-to-js: 1.1.16
       unist-util-position: 5.0.0
       zwitch: 2.0.4
     transitivePeerDependencies:
@@ -3726,7 +3729,7 @@ snapshots:
       mdast-util-mdxjs-esm: 2.0.1
       property-information: 7.2.0
       space-separated-tokens: 2.0.2
-      style-to-js: 1.0.0
+      style-to-js: 1.1.16
       unist-util-position: 5.0.0
       vfile-message: 4.0.3
     transitivePeerDependencies:
@@ -3767,7 +3770,7 @@ snapshots:
 
   httpxy@0.5.5: {}
 
-  inline-style-parser@0.1.1: {}
+  inline-style-parser@0.2.4: {}
 
   is-alphabetical@2.0.1: {}
 
@@ -4534,7 +4537,7 @@ snapshots:
 
   react@19.2.8: {}
 
-  readdirp@5.0.0: {}
+  readdirp@5.1.1: {}
 
   recma-build-jsx@1.0.0:
     dependencies:
@@ -4719,13 +4722,13 @@ snapshots:
       character-entities-html4: 2.1.0
       character-entities-legacy: 3.0.0
 
-  style-to-js@1.0.0:
+  style-to-js@1.1.16:
     dependencies:
-      style-to-object: 0.3.0
+      style-to-object: 1.0.8
 
-  style-to-object@0.3.0:
+  style-to-object@1.0.8:
     dependencies:
-      inline-style-parser: 0.1.1
+      inline-style-parser: 0.2.4
 
   tailwind-merge@3.6.0: {}
 

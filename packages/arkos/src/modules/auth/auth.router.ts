@@ -7,8 +7,10 @@ import { AuthPrismaQueryOptions } from "../../types";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import ArkosRouter from "../../utils/arkos-router";
 import loadableRegistry from "../../components/arkos-loadable-registry";
-import { routeHookReader } from "../../components/arkos-route-hook/reader";
-import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/types";
+import {
+  OperationByModule,
+  routeHookReader,
+} from "../../components/arkos-route-hook/reader";
 import authController from "./auth.controller";
 import authOpenAPIGenerator from "./utils/auth-openapi-generator";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
@@ -19,9 +21,7 @@ export function getAuthRouter() {
 
   const routeHook = loadableRegistry.getItem("ArkosRouteHook", "auth");
 
-  const op = (
-    operation: keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName">
-  ) => {
+  const op = (operation: OperationByModule<"auth">) => {
     const components = routeHook
       ? routeHookReader.forOperation("auth", operation)
       : {

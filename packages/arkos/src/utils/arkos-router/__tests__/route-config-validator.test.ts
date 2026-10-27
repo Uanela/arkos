@@ -16,7 +16,7 @@ describe("RouteConfigValidator", () => {
     jest.clearAllMocks();
   });
 
-  it("should not throw when validation matches swagger mode for zod", () => {
+  it("should not throw when validation matches validation resolver for zod", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({
       validation: { resolver: "zod" },
     });
@@ -27,7 +27,7 @@ describe("RouteConfigValidator", () => {
     expect(() => RouteConfigValidator.validate(config as any)).not.toThrow();
   });
 
-  it("should not throw when validation matches swagger mode for class-validator", () => {
+  it("should not throw when validation matches validation resolver for class-validator", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({
       validation: { resolver: "class-validator" },
     });
@@ -38,7 +38,7 @@ describe("RouteConfigValidator", () => {
     expect(() => RouteConfigValidator.validate(config as any)).not.toThrow();
   });
 
-  it("should throw when zod schema used but swagger mode is not zod", () => {
+  it("should throw when zod schema used but validation resolver is not zod", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({
       validation: { resolver: "class-validator" },
     });
@@ -51,7 +51,7 @@ describe("RouteConfigValidator", () => {
     );
   });
 
-  it("should throw when class used but swagger mode is not class-validator", () => {
+  it("should throw when class used but validation resolver is not class-validator", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({
       validation: { resolver: "zod" },
     });

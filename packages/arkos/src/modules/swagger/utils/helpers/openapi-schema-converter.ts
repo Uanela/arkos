@@ -1,8 +1,7 @@
 import { OpenAPIV3 } from 'openapi-types';
 import { isClass, isZodSchema } from '../../../../utils/dynamic-loader';
 import classValidatorToJsonSchema from './class-validator-to-json-schema';
-import { getArkosConfig } from '../../../../server';
-import z, { ZodType } from 'zod';
+import z from 'zod';
 
 /**
  * Singleton class responsible for converting various schema formats (Zod, Class DTOs, JSON Schema)
@@ -10,19 +9,17 @@ import z, { ZodType } from 'zod';
  * and parameters.
  */
 class OpenAPIchemaConverter {
-  private validatorToJsonSchema: (schema: any) => any;
+  validatorToJsonSchema: (schema: any) => any;
 
   constructor() {
     this.validatorToJsonSchema = (schema: any) => {
-      const validationResolver = getArkosConfig()?.validation?.resolver;
-      const fn =
-        validationResolver === 'zod'
-          ? (schema: ZodType) => {
-              return z.toJSONSchema(schema, { target: 'openapi-3.0' });
-            }
-          : classValidatorToJsonSchema;
-
-      return fn(schema);
+      return isZodSchema(schema)
+        ? z.toJSONSchema(schema, {
+            target: 'openapi-3.0',
+            io: 'input',
+            unrepresentable: 'any',
+          })
+        : classValidatorToJsonSchema(schema);
     };
   }
 

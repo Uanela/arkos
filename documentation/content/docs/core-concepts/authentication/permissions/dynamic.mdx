@@ -240,10 +240,10 @@ Imperative checks in fine-grained access control also work with auth config file
 
 1. Add `AuthRole`, `AuthPermission`, `UserRole` models to your schema
 2. Replace `role`/`roles` enum field on `User` with `roles UserRole[]`
-3. Run `arkos prisma generate`
+3. Run `arkos generate`
 4. Change `mode` to `"dynamic"` in your config
 5. Create `AuthRole` records matching your previous enum values
 6. Create `AuthPermission` records based on your existing rules
 7. Assign users to roles via `UserRole`
 8. Remove `roles` from your policy rules — they'll be ignored anyway
-9. **Optional:** for per-user overrides, add the `UserPermission` model and `UserPermissionEffect` enum to your schema, add `permissions UserPermission[]` to `User`, then run `arkos prisma generate`
+9. **Optional:** for per-user overrides, add the `UserPermission` model and `UserPermissionEffect` enum to your schema, add `permissions UserPermission[]` to `User`, then run `arkos generate`

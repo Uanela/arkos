@@ -544,6 +544,8 @@ describe('OpenAPISchemaConverter', () => {
 
       expect(mockZodToJsonSchema).toHaveBeenCalledWith(zodSchema, {
         target: 'openapi-3.0',
+        io: 'input',
+        unrepresentable: 'any',
       });
       expect(mockClassValidatorToJsonSchema).not.toHaveBeenCalled();
     });

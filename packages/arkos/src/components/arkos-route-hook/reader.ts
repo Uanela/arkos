@@ -19,7 +19,10 @@ export type OperationByModule<TModule extends ArkosModuleType> =
   TModule extends "file-upload"
   ? keyof Omit<ArkosFileUploadRouteHookInstance, "__type" | "moduleName" | "service">
   : TModule extends "auth"
-  ? keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName" | "service">
+  ? keyof Omit<
+      ArkosAuthRouteHookInstance,
+      "__type" | "moduleName" | "_configs" | "service"
+    >
   : PrismaOperations;
 
 /**

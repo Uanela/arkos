@@ -121,7 +121,7 @@ export default prisma;
 ### 6. Generate Prisma Client and Arkos Types
 
 ```bash
-npx arkos prisma generate
+npx arkos generate
 ```
 
 <Callout type="info">
@@ -168,14 +168,14 @@ Now that Prisma is set up with Arkos:
 ### Prisma Client Not Found
 If you see `Cannot find module '@prisma/client'`, run:
 ```bash
-npx arkos prisma generate
+npx arkos generate
 ```
 
 ### Database Connection Errors
 Verify your `DATABASE_URL` in `.env` is correct and the database is accessible.
 
 ### Type Errors in TypeScript
-Make sure you've run `npx arkos prisma generate` after making changes to your Prisma schema.
+Make sure you've run `npx arkos generate` after making changes to your Prisma schema.
 
 ### Model Routes Not Generated
 

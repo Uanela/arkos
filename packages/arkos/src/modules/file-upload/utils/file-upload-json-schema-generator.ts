@@ -104,11 +104,17 @@ class FileUploadJsonSchemaGenerator {
         name: "resizeTo",
         in: "query",
         required: false,
-        schema: {
-          type: "string",
-          enum: ["cover", "contain", "fill", "inside", "outside"],
-        },
-        description: "Resize strategy (only applicable for fileType=images)",
+        schema: { type: "integer", minimum: 1 },
+        description:
+          "Target size in pixels to fit within, keeps aspect ratio (only applicable for fileType=images)",
+      },
+      {
+        name: "quality",
+        in: "query",
+        required: false,
+        schema: { type: "integer", minimum: 1, maximum: 100 },
+        description:
+          "Output quality for lossy formats like webp/jpeg/avif (only applicable for fileType=images)",
       },
     ];
   }
@@ -127,7 +133,10 @@ class FileUploadJsonSchemaGenerator {
 
     switch (endpoint) {
       case "findFile": {
-        const pathname = `${cleanBasePath}/*`;
+        const isRegistered = arkosConfig.fileUpload?.serving === "registered";
+        const pathname = isRegistered
+          ? `${cleanBasePath}/:fileType/*`
+          : `${cleanBasePath}/*`;
         return {
           ...existingOpenApi,
           tags: ["File Upload", ...(existingOpenApi?.tags || [])].filter(
@@ -139,7 +148,9 @@ class FileUploadJsonSchemaGenerator {
               : existingOpenApi.summary,
           description:
             existingOpenApi?.description ||
-            `Serves static files from the upload directory (${arkosConfig.fileUpload?.baseUploadDir || "uploads"}). Uses wildcard path matching to serve files from any subdirectory.`,
+            (isRegistered
+              ? `Serves files from the registered upload directories (${arkosConfig.fileUpload?.baseUploadDir || "uploads"}/images, videos, documents, files).`
+              : `Serves static files from the upload directory (${arkosConfig.fileUpload?.baseUploadDir || "uploads"}). Uses wildcard path matching to serve files from any subdirectory.`),
           operationId:
             existingOpenApi?.operationId?.includes(pathname) ||
               !existingOpenApi?.operationId
@@ -149,13 +160,28 @@ class FileUploadJsonSchemaGenerator {
             ...(existingOpenApi?.parameters || []),
             ...(
               [
+                ...(isRegistered
+                  ? [
+                      {
+                        name: "fileType",
+                        in: "path",
+                        required: true,
+                        schema: {
+                          type: "string",
+                          enum: ["images", "videos", "documents", "files"],
+                        },
+                        description: "Type of file being retrieved",
+                      },
+                    ]
+                  : []),
                 {
                   name: "slug",
                   in: "path",
                   required: true,
                   schema: { type: "string" },
-                  description:
-                    "Path to the file including file type directory (e.g., images/photo.jpg)",
+                  description: isRegistered
+                    ? "Path to the file within the file type directory (e.g., photo.jpg)"
+                    : "Path to the file including file type directory (e.g., images/photo.jpg)",
                 },
               ] as OpenAPIV3.ParameterObject[]
             ).filter(
@@ -264,7 +290,7 @@ class FileUploadJsonSchemaGenerator {
       }
 
       case "updateFile": {
-        const pathname = `${cleanBasePath}/:fileType/:fileName`;
+        const pathname = `${cleanBasePath}/:fileType/:fileName(.+)`;
         return {
           ...existingOpenApi,
           tags: ["File Upload", ...(existingOpenApi?.tags || [])].filter(
@@ -301,7 +327,8 @@ class FileUploadJsonSchemaGenerator {
                   in: "path",
                   required: true,
                   schema: { type: "string" },
-                  description: "Name of the file to update",
+                  description:
+                    "Name of the file to update, including its subdirectory (e.g., profile/photo.jpg)",
                 },
                 ...this.getImageQueryParameters(),
               ] as OpenAPIV3.ParameterObject[]
@@ -355,7 +382,7 @@ class FileUploadJsonSchemaGenerator {
       }
 
       case "deleteFile": {
-        const pathname = `${cleanBasePath}/:fileType/:fileName`;
+        const pathname = `${cleanBasePath}/:fileType/:fileName(.+)`;
         return {
           ...existingOpenApi,
           tags: ["File Upload", ...(existingOpenApi?.tags || [])].filter(
@@ -392,7 +419,8 @@ class FileUploadJsonSchemaGenerator {
                   in: "path",
                   required: true,
                   schema: { type: "string" },
-                  description: "Name of the file to delete",
+                  description:
+                    "Name of the file to delete, including its subdirectory (e.g., profile/photo.jpg)",
                 },
               ] as OpenAPIV3.ParameterObject[]
             ).filter(

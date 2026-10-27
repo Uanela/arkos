@@ -11,6 +11,7 @@ import runtimeCliCommander from './utils/cli/utils/runtime-cli-commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import ExitError from './utils/helpers/exit-error';
 import { applyArkosRouterProxy } from './utils/arkos-router/utils/helpers/apply-arkos-router-proxy';
+import { serveUploadDir } from './modules/file-upload/utils/helpers/serve-upload-dir';
 export const app: express.Express = express();
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
@@ -145,6 +146,8 @@ export default function arkos(): Arkos {
 
   return app;
 }
+
+arkos.serveUploadDir = serveUploadDir;
 
 export function getAppServer() {
   return appServer;

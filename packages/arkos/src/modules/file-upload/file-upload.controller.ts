@@ -7,7 +7,11 @@ import path from "path";
 import fs from "fs";
 import catchAsync from "../error-handler/utils/catch-async";
 import { getArkosConfig } from "../../server";
-import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
+import {
+  ImageOptimizationOptions,
+  processFile,
+  processImage,
+} from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import loadableRegistry from "../../components/arkos-loadable-registry";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
@@ -51,8 +55,14 @@ export class FileUploadController {
   uploadFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const { fileType } = req.params;
-      const { format, width, height, resizeTo } = req.query;
-      const options = { format, width, height, resizeTo };
+      const { format, width, height, resizeTo, quality } = req.query;
+      const options = {
+        format,
+        width,
+        height,
+        resizeTo,
+        quality,
+      } as ImageOptimizationOptions;
 
       const {
         documentUploadService,
@@ -157,7 +167,10 @@ export class FileUploadController {
    */
   deleteFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const { fileType, fileName } = req.params;
+      const { fileType } = req.params;
+      const fileName = Array.isArray(req.params.fileName)
+        ? req.params.fileName.join("/")
+        : req.params.fileName;
 
       const {
         documentUploadService,
@@ -228,9 +241,18 @@ export class FileUploadController {
    */
   updateFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const { fileType, fileName } = req.params;
-      const { format, width, height, resizeTo } = req.query;
-      const options = { format, width, height, resizeTo };
+      const { fileType } = req.params;
+      const fileName = Array.isArray(req.params.fileName)
+        ? req.params.fileName.join("/")
+        : req.params.fileName;
+      const { format, width, height, resizeTo, quality } = req.query;
+      const options = {
+        format,
+        width,
+        height,
+        resizeTo,
+        quality,
+      } as ImageOptimizationOptions;
 
       const {
         documentUploadService,

@@ -8,6 +8,8 @@ import path from "path";
 import loadableRegistry from "../../../components/arkos-loadable-registry";
 import { routeHookReader } from "../../../components/arkos-route-hook/reader";
 import { getArkosConfig } from "../../../server";
+import { uploadServingRegistry } from "../utils/helpers/upload-serving.registry";
+import { DEFAULT_UPLOAD_DIRS } from "../utils/helpers/upload-path.helper";
 
 jest.mock("express", () => {
   const mockRouter = {
@@ -70,6 +72,7 @@ describe("File Upload Router", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    uploadServingRegistry.reset();
 
     mockRouter = Router();
 
@@ -107,12 +110,12 @@ describe("File Upload Router", () => {
       sendResponse
     );
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/uploads/:fileType/:fileName" }),
+      expect.objectContaining({ path: "/api/uploads/:fileType/*fileName" }),
       fileUploadController.updateFile,
       sendResponse
     );
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/uploads/:fileType/:fileName" }),
+      expect.objectContaining({ path: "/api/uploads/:fileType/*fileName" }),
       fileUploadController.deleteFile,
       sendResponse
     );
@@ -277,13 +280,13 @@ describe("File Upload Router", () => {
     getFileUploadRouter();
 
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/uploads/:fileType/:fileName" }),
+      expect.objectContaining({ path: "/api/uploads/:fileType/*fileName" }),
       beforeUpdate,
       fileUploadController.updateFile,
       sendResponse
     );
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/uploads/:fileType/:fileName" }),
+      expect.objectContaining({ path: "/api/uploads/:fileType/*fileName" }),
       fileUploadController.deleteFile,
       afterDelete,
       sendResponse
@@ -388,5 +391,101 @@ describe("File Upload Router", () => {
       "/resolved/path/to/uploads",
       expect.any(Object)
     );
+  });
+
+  describe("upload serving", () => {
+    test("should enable find file serving in the registry by default", () => {
+      getFileUploadRouter();
+
+      expect(uploadServingRegistry.isFindFileServingEnabled()).toBe(true);
+    });
+
+    test("should disable find file serving when findFile route is disabled", () => {
+      mockGetItem.mockReturnValue({ some: "hook" });
+      mockForOperation.mockImplementation((_module: string, operation: string) =>
+        operation === "findFile"
+          ? { ...emptyHook(), routeConfig: { disabled: true } }
+          : emptyHook()
+      );
+
+      getFileUploadRouter();
+
+      expect(uploadServingRegistry.isFindFileServingEnabled()).toBe(false);
+    });
+
+    test("should not register routes and should disable serving when fileUpload.enabled is false", () => {
+      uploadServingRegistry.setFindFileServingEnabled(true);
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        fileUpload: { enabled: false },
+      });
+
+      getFileUploadRouter();
+
+      expect(mockRouter.get).not.toHaveBeenCalled();
+      expect(mockRouter.post).not.toHaveBeenCalled();
+      expect(uploadServingRegistry.isFindFileServingEnabled()).toBe(false);
+    });
+
+    test("should serve by wildcard path without a file type guard when serving is all", () => {
+      getFileUploadRouter();
+
+      const getCall = mockRouter.get.mock.calls[0];
+
+      expect(getCall[0]).toEqual(
+        expect.objectContaining({ path: "/api/uploads/*slug" })
+      );
+      expect(getCall).toHaveLength(4);
+    });
+
+    describe("serving registered", () => {
+      beforeEach(() => {
+        (getArkosConfig as jest.Mock).mockReturnValue({
+          fileUpload: {
+            baseRoute: "/api/uploads/",
+            baseUploadDir: "uploads",
+            serving: "registered",
+          },
+        });
+      });
+
+      test("should scope find file path by file type and add a guard middleware", () => {
+        getFileUploadRouter();
+
+        const getCall = mockRouter.get.mock.calls[0];
+
+        expect(getCall[0]).toEqual(
+          expect.objectContaining({ path: "/api/uploads/:fileType/*slug" })
+        );
+        expect(getCall).toHaveLength(5);
+      });
+
+      test("should respond 404 for a file type that is not a built-in upload dir", () => {
+        getFileUploadRouter();
+
+        const guard = mockRouter.get.mock.calls[0][2];
+        const next = jest.fn();
+
+        guard({ params: { fileType: "private" }, path: "/private/a.png" }, {}, next);
+
+        expect(next).toHaveBeenCalledWith(
+          expect.objectContaining({ statusCode: 404, code: "FileNotFound" })
+        );
+      });
+
+      test("should continue for built-in upload dirs", () => {
+        getFileUploadRouter();
+
+        const guard = mockRouter.get.mock.calls[0][2];
+        const next = jest.fn();
+
+        guard(
+          { params: { fileType: DEFAULT_UPLOAD_DIRS[0] }, path: "/a.png" },
+          {},
+          next
+        );
+
+        expect(next).toHaveBeenCalledWith();
+      });
+    });
   });
 });

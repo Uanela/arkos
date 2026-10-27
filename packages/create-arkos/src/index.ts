@@ -66,12 +66,12 @@ export async function main() {
   ${argProjectName !== "."
       ? `1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
-  3. npx arkos prisma generate
+  3. npx arkos generate
   4. npx prisma db push
   5. ${packageManager} run dev
 `
       : `1. setup your ${chalk.cyan("DATABASE_URL")} under .env
-  2. npx arkos prisma generate
+  2. npx arkos generate
   3. npx prisma db push
   4. ${packageManager} run dev
 `

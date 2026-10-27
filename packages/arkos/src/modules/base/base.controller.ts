@@ -81,6 +81,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    */
   private modelName: string;
 
+  private get hasCustomService() {
+    return !!this.getRouteHook()?._configs.service;
+  }
+
   /**
    * Creates a new BaseController instance
    * @param {string} modelName - The name of the model for which this controller will handle operations
@@ -190,6 +194,11 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
           isRouteHookMethod ? routeHook!._configs.service : this.service,
           serviceArgs,
         );
+
+        if (this.hasCustomService && result === undefined)
+          throw new Error(
+            `Custom service method ${config.serviceMethod} didn't return the required data`,
+          );
 
         if (config.hooks?.afterService)
           result = await config.hooks.afterService(result, req);

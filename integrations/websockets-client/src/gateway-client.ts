@@ -23,23 +23,33 @@ export class GatewayClient {
   private handlers = new Map<string, Set<ArkosEventHandler>>();
   private boundEvents = new Set<string>();
 
-  public status: GatewayStatus = "disconnected";
+  public status: GatewayStatus;
   public user: any = null;
+
+  private onReconnectAttempt = () => {
+    if (this.socket.active) this.setStatus("reconnecting");
+  };
+  private onReconnectFailed = () => this.setStatus("disconnected");
 
   constructor(socket: Socket, dedup: ClientDedupStore) {
     this.socket = socket;
     this.dedup = dedup;
+    this.status = socket.connected
+      ? "connected"
+      : socket.active
+        ? "connecting"
+        : "disconnected";
     this.bindSocketEvents();
   }
 
   private bindSocketEvents(): void {
     this.socket.on("connect", () => this.setStatus("connected"));
     this.socket.on("disconnect", () => this.setStatus("disconnected"));
-    this.socket.on("connect_error", () => this.setStatus("disconnected"));
-    this.socket.io.on("reconnect_attempt", () =>
-      this.setStatus("reconnecting")
-    );
-    this.socket.io.on("reconnect", () => this.setStatus("connected"));
+    this.socket.on("connect_error", () => {
+      if (!this.socket.active) this.setStatus("disconnected");
+    });
+    this.socket.io.on("reconnect_attempt", this.onReconnectAttempt);
+    this.socket.io.on("reconnect_failed", this.onReconnectFailed);
 
     // Convention: server can emit "authenticated" after auth to hydrate client user
     this.socket.on("authenticated", (data: any) => {
@@ -49,6 +59,7 @@ export class GatewayClient {
   }
 
   private setStatus(status: GatewayStatus): void {
+    if (status === this.status) return;
     this.status = status;
     this.notify("onStatus", status);
   }
@@ -93,10 +104,14 @@ export class GatewayClient {
     if (!this.boundEvents.has(event)) {
       this.boundEvents.add(event);
       this.socket.on(event, (payload: any) => {
-        const mid = payload?._meta?.mid ?? payload?.id ?? payload?.messageId;
+        const mid = payload?._meta?.mid;
         if (mid && this.dedup.checkAndSet(event, mid)) return;
 
-        const { _meta, ...data } = payload ?? {};
+        let data = payload;
+        if (payload && typeof payload === "object" && "_meta" in payload) {
+          const { _meta, ...rest } = payload;
+          data = rest;
+        }
         // snapshot to avoid issues if a handler unsubscribes mid-iteration
         for (const h of [...(this.handlers.get(event) ?? [])]) {
           h(data as T);
@@ -202,6 +217,8 @@ export class GatewayClient {
   }
 
   destroy(): void {
+    this.socket.io.off("reconnect_attempt", this.onReconnectAttempt);
+    this.socket.io.off("reconnect_failed", this.onReconnectFailed);
     this.socket.removeAllListeners();
     this.handlers.clear();
     this.boundEvents.clear();

@@ -18,7 +18,25 @@ import {
   AccessControlRules,
   DetailedAccessControlRule,
 } from '../../types/auth';
-import { MsDuration, toMs } from './utils/helpers/auth.controller.helpers';
+import {
+  MsDuration,
+  toMs,
+  createPrismaWhereClause,
+  getDefaultUsernameField,
+} from './utils/helpers/auth.controller.helpers';
+import { ArkosPrismaService } from '../base/base.service';
+import {
+  AuthUser,
+  DeleteMeOptions,
+  GetMeOptions,
+  LoginInput,
+  LoginOptions,
+  SignupDto,
+  SignupOptions,
+  UpdateMeDto,
+  UpdateMeOptions,
+  UpdatePasswordInput,
+} from './auth.types';
 import {
   invaliAuthTokenError,
   loginRequiredError,
@@ -34,6 +52,14 @@ import { getUserFileExtension } from '../../utils/helpers/fs.helpers';
 import { authenticationDocsLinks } from './utils/docs-links';
 import authHookManager from './utils/auth-hooks-manager';
 import { ArkosSocket } from '../../components/arkos-gateway/types';
+import {
+  resolveRequestToken,
+  resolveSocketToken,
+} from './utils/token-extraction';
+import {
+  BadRequestError,
+  UnauthorizedError,
+} from '../error-handler/utils/errors';
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -43,6 +69,13 @@ export class AuthService {
    * Object containing a combination of actions per resource, tracked by each set of calls of `authService.handleAccessControl`, this can be accessed through the `authService` object or through the endpoint
    */
   actionsPerResource: Record<string, Set<string>> = {};
+
+  private _userService?: ArkosPrismaService<'user'>;
+
+  protected get userService(): ArkosPrismaService<'user'> {
+    if (!this._userService) this._userService = new ArkosPrismaService('user');
+    return this._userService;
+  }
 
   /**
    * Signs a JWT token for the user.
@@ -359,34 +392,266 @@ export class AuthService {
     return !!hasRolePermission;
   }
 
-  private extractRequestToken(
-    req: ArkosRequest,
-    cookie: 'arkos_access_token' = 'arkos_access_token',
-  ) {
-    let token: string | null = null;
-
-    if (
-      req?.headers?.authorization &&
-      req?.headers?.authorization.startsWith('Bearer') &&
-      req?.headers?.authorization.split?.(' ')?.[1]
-    )
-      token = req?.headers?.authorization.split(' ')[1];
-
-    if (
-      !token &&
-      req?.cookies?.arkos_access_token !== 'no-token' &&
-      req.cookies
-    )
-      token = req?.cookies?.[cookie];
-
-    return token;
+  private sanitizeUser(user: Record<string, any>): AuthUser {
+    const { password: _password, ...sanitized } = user;
+    return sanitized as AuthUser;
   }
 
-  private extractSocketToken(socket: ArkosSocket, key: 'token' = 'token') {
-    return (
-      socket.handshake.auth?.[key] ||
-      socket.handshake.headers?.authorization?.replace('Bearer ', '')
+  private withPasswordIncluded<T extends Record<string, any>>(
+    queryOptions?: T,
+  ): Record<string, any> {
+    const options: Record<string, any> = { ...(queryOptions || {}) };
+
+    if (options.select) options.select = { ...options.select, password: true };
+
+    if (options.omit) {
+      const { password: _password, ...omit } = options.omit;
+      options.omit = omit;
+    }
+
+    return options;
+  }
+
+  /**
+   * Retrieves the authenticated user by id without the password field.
+   *
+   * Can be overridden through `ArkosRouteHook("auth", { service })`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
+   */
+  async getMe(
+    userId: User["id"],
+    queryOptions?: GetMeOptions,
+  ): Promise<AuthUser | null> {
+    const user = await this.userService.findOne(
+      { id: userId },
+      queryOptions || {},
     );
+
+    return user ? this.sanitizeUser(user) : null;
+  }
+
+  /**
+   * Updates the authenticated user without the password field in the result.
+   * Password changes are rejected, use `updatePassword` instead.
+   *
+   * Can be overridden through `ArkosRouteHook("auth", { service })`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param data - The fields to update
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
+   */
+  async updateMe(
+    userId: User["id"],
+    data: UpdateMeDto,
+    queryOptions?: UpdateMeOptions,
+  ): Promise<AuthUser> {
+    if ("password" in (data as Record<string, any>))
+      throw new BadRequestError(
+        "In order to update password use the update-password endpoint.",
+        "InvalidFieldPassword",
+      );
+
+    const user = await this.userService.updateOne(
+      { id: userId },
+      data,
+      queryOptions || {},
+    );
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * Creates a new user account without the password field in the result.
+   *
+   * Can be overridden through `ArkosRouteHook("auth", { service })`.
+   *
+   * @param data - The user data, the password is hashed automatically
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
+   */
+  async signup(
+    data: SignupDto,
+    queryOptions?: SignupOptions,
+  ): Promise<AuthUser> {
+    const user = await this.userService.createOne(data, queryOptions || {});
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * Marks the authenticated user's account as self-deleted by setting
+   * `deletedSelfAccountAt`, the result never includes the password field.
+   *
+   * Can be overridden through `ArkosRouteHook("auth", { service })`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
+   */
+  async deleteMe(
+    userId: User["id"],
+    queryOptions?: DeleteMeOptions,
+  ): Promise<AuthUser> {
+    const user = await this.userService.updateOne(
+      { id: userId },
+      { deletedSelfAccountAt: new Date().toISOString() },
+      queryOptions || {},
+    );
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * Authenticates a user with the given username field and password.
+   *
+   * The username field is inferred from the username key present in `input`
+   * (the only key besides `password`), can be overridden explicitly with
+   * `usernameField` for nested paths such as `"profile.nickname"`, and falls
+   * back to `authentication.login.allowedUsernames[0] || "username"`. When
+   * `authentication.login.allowedUsernames` is configured, the resolved field
+   * must be one of its entries. The password is always loaded for the
+   * comparison and never returned.
+   *
+   * Can be overridden through `ArkosRouteHook("auth", { service })`.
+   *
+   * @param input - Its username key and the password
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @returns The sanitized user and a signed access token
+   * @since 1.8.0-rc
+   */
+  async login(
+    input: LoginInput,
+    queryOptions?: LoginOptions,
+  ): Promise<{ user: AuthUser; accessToken: string }> {
+    const { password } = input as { password: string };
+    const usernameField =
+      (input as { usernameField?: string }).usernameField ||
+      Object.keys(input).find(
+        (key) => key !== "password" && key !== "usernameField",
+      ) ||
+      getDefaultUsernameField();
+
+    const allowedUsernames =
+      getArkosConfig()?.authentication?.login?.allowedUsernames;
+
+    if (allowedUsernames?.length && !allowedUsernames.includes(usernameField))
+      throw new BadRequestError(
+        `Invalid username field, expected one of: ${allowedUsernames.join(", ")}`,
+        "InvalidUsernameField",
+      );
+
+    const lastField = usernameField.split(".").pop()!;
+    const username = (input as Record<string, any>)[lastField];
+
+    if (!username || !password)
+      throw new BadRequestError(
+        `Please provide both ${lastField} and password`,
+        `MissingCredentialFields`,
+      );
+
+    const user = (await this.userService.findOne(
+      createPrismaWhereClause(usernameField, username),
+      this.withPasswordIncluded(queryOptions),
+    )) as Record<string, any> | null;
+
+    if (!user || !(await this.isCorrectPassword(password, user.password)))
+      throw new UnauthorizedError(
+        `Incorrect ${lastField} or password`,
+        `IncorrectCredentials`,
+      );
+
+    return {
+      user: this.sanitizeUser(user),
+      accessToken: this.signJwtToken(user.id),
+    };
+  }
+
+  /**
+   * Updates the password of the given user after validating the current one.
+   *
+   * Can be overridden through `ArkosRouteHook("auth", { service })`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param input - The current and the new password
+   * @returns A fresh access token valid after the password change
+   * @since 1.8.0-rc
+   */
+  async updatePassword(
+    userId: User["id"],
+    input: UpdatePasswordInput,
+  ): Promise<{ accessToken: string }> {
+    const { currentPassword, newPassword } = input;
+
+    if (!currentPassword || !newPassword)
+      throw new AppError(
+        "currentPassword and newPassword are required",
+        400,
+        "SameCurrentAndNewPassword",
+      );
+
+    const user = (await this.userService.findOne(
+      { id: userId },
+      this.withPasswordIncluded(),
+    )) as Record<string, any> | null;
+
+    if (!user || user.isActive === false || user.deletedSelfAccountAt)
+      throw new AppError("User not found!", 404);
+
+    if (
+      !(await this.isCorrectPassword(
+        String(currentPassword),
+        String(user.password),
+      ))
+    )
+      throw new AppError(
+        "Current password is incorrect",
+        400,
+        "IncorrentCurrentPassword",
+      );
+
+    await this.userService.updateOne(
+      { id: userId },
+      {
+        password: await this.hashPassword(String(newPassword)),
+        passwordChangedAt: new Date(Date.now()).toISOString(),
+      },
+    );
+
+    return { accessToken: this.signJwtToken(userId) };
+  }
+
+  /**
+   * Runs on logout. Override through `ArkosRouteHook("auth", { service })`.
+   *
+   * @since 1.8.0-rc
+   */
+  async logout(_userId: User["id"], _accessToken: string): Promise<void> {}
+
+  private extractRequestToken(
+    req: ArkosRequest,
+    cookie: "arkos_access_token" = "arkos_access_token",
+  ) {
+    return resolveRequestToken({
+      authorization: req?.headers?.authorization,
+      cookies: req?.cookies,
+      cookieName: cookie,
+    });
+  }
+
+  private extractSocketToken(socket: ArkosSocket, key: "token" = "token") {
+    const requestCookie = (socket.request as any)?.headers?.cookie;
+
+    return resolveSocketToken({
+      auth: socket.handshake?.auth,
+      key,
+      headers: socket.handshake?.headers,
+      cookies: socket.handshake?.cookies,
+      cookieHeader: requestCookie,
+    });
   }
 
   async validateDecodedUser(
@@ -394,7 +659,7 @@ export class AuthService {
     action: 'logout' | 'default' = 'default',
   ): Promise<User> {
     const prisma = getPrismaInstance();
-    const user = await (prisma as any).user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: decoded.id },
     });
 
@@ -609,7 +874,7 @@ export class AuthService {
       } else if (configs?.authentication?.mode === 'static') {
         return (
           !!accessControl &&
-          this.checkStaticAccessControl(user as any, action, accessControl)
+          this.checkStaticAccessControl(user, action, accessControl)
         );
       }
       return false;

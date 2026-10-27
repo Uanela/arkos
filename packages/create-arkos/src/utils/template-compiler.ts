@@ -108,10 +108,8 @@ class TemplateCompiler {
         ...userDtoFiles,
       );
 
-    // Ignoring typescript related files when typescript false
     if (!config.typescript) files.push(...["tsconfig.json.hbs"]);
 
-    // Ignoring javascript related files when typescript true
     if (config?.typescript) files.push(...["jsconfig.json.hbs"]);
 
     if (config.entryPoint === "src/app") files.push("server.ts.hbs");

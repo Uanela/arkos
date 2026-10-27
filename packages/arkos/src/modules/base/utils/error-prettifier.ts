@@ -242,21 +242,9 @@ export class ErrorPrettifier {
         }
         return "TooBigConstraint";
 
-      // case "invalid_string":
-      //   if ("expected" in issue) {
-      //     const validation = issue.expected;
-      //     if (validation === "email") return "IsEmailConstraint";
-      //     if (validation === "uuid") return "IsUuidConstraint";
-      //     if (validation === "url") return "IsUrlConstraint";
-      //     if (typeof validation === "object" && "includes" in validation)
-      //       return "ContainsConstraint";
-      //     if (typeof validation === "object" && "startsWith" in validation)
-      //       return "StartsWithConstraint";
-      //     if (typeof validation === "object" && "endsWith" in validation)
-      //       return "EndsWithConstraint";
-      //   }
-      //   return "InvalidStringConstraint";
-      //
+      case "invalid_format":
+        return this.mapZodFormatToConstraintName((issue as any).format);
+
       case "invalid_value":
         if (issue.values.length > 1) {
           return "IsEnumConstraint";
@@ -281,6 +269,68 @@ export class ErrorPrettifier {
 
       default:
         return "ValidationConstraint";
+    }
+  }
+
+  /**
+   * Maps a Zod `invalid_format` format (e.g. "email", "uuid", "regex") to a
+   * class-validator style constraint name.
+   *
+   * @param format - The format reported by Zod
+   * @returns Class-validator style constraint name
+   */
+  private mapZodFormatToConstraintName(format?: string): string {
+    switch (format) {
+      case "email":
+        return "IsEmailConstraint";
+      case "uuid":
+      case "guid":
+        return "IsUuidConstraint";
+      case "url":
+        return "IsUrlConstraint";
+      case "emoji":
+        return "IsEmojiConstraint";
+      case "datetime":
+      case "date":
+      case "time":
+      case "duration":
+        return "IsDateStringConstraint";
+      case "ipv4":
+      case "ipv6":
+      case "cidrv4":
+      case "cidrv6":
+        return "IsIPConstraint";
+      case "base64":
+      case "base64url":
+        return "IsBase64Constraint";
+      case "json_string":
+        return "IsJSONConstraint";
+      case "e164":
+        return "IsPhoneNumberConstraint";
+      case "jwt":
+        return "IsJWTConstraint";
+      case "regex":
+        return "MatchesConstraint";
+      case "starts_with":
+        return "StartsWithConstraint";
+      case "ends_with":
+        return "EndsWithConstraint";
+      case "includes":
+        return "ContainsConstraint";
+      case "lowercase":
+        return "IsLowercaseConstraint";
+      case "uppercase":
+        return "IsUppercaseConstraint";
+      case "nanoid":
+      case "cuid":
+      case "cuid2":
+      case "ulid":
+      case "xid":
+      case "ksuid":
+      case "template_literal":
+        return "IsStringConstraint";
+      default:
+        return "InvalidFormatConstraint";
     }
   }
 
@@ -380,6 +430,16 @@ export class ErrorPrettifier {
     // "Expected string, received number" -> "'fieldPath': Expected string, received number"
     if (message.startsWith("Expected")) {
       return `'${fieldPath}' must be valid: ${message}`;
+    }
+
+    if (message.startsWith("Invalid input:")) {
+      const detail = message.replace(/^Invalid input:\s*/, "");
+      return `'${fieldPath}' must be valid: ${detail}`;
+    }
+
+    if (message.startsWith("Too small:") || message.startsWith("Too big:")) {
+      const detail = message.charAt(0).toLowerCase() + message.slice(1);
+      return `'${fieldPath}' ${detail}`;
     }
 
     // "Invalid email" -> "'fieldPath' must be a valid email"

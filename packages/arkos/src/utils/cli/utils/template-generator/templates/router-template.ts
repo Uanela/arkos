@@ -26,3 +26,4 @@ ${isKnown ? `${routerName}.load(${routeHookName})\n` : ""}
 export default ${modelName.camel}Router
 `;
 }
+

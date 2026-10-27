@@ -1,9 +1,9 @@
 import { AuthController, defaultExcludedUserFields } from "../auth.controller";
-import authService from "../auth.service";
-import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
+import authService, { AuthService } from "../auth.service";
+import authActionService from "../utils/services/auth-action.service";
 import { getArkosConfig } from "../../../server";
-import { ArkosPrismaService } from "../../base/base.service";
 import { routeHookReader } from "../../../components/arkos-route-hook/reader";
+import loadableRegistry from "../../../components/arkos-loadable-registry";
 
 jest.mock("fs");
 jest.mock("bcryptjs", () => ({
@@ -13,15 +13,30 @@ jest.mock("bcryptjs", () => ({
   },
 }));
 
-jest.mock("../auth.service", () => ({
-  ...jest.requireActual("../auth.service"),
-  isCorrectPassword: jest.fn(),
-  signJwtToken: jest.fn(),
-  hashPassword: jest.fn(),
-  authenticate: jest.fn(),
-  handleAuthenticationControl: jest.fn(),
-  handleAccessControl: jest.fn(),
-  getJwtCookieOptions: jest.fn(),
+jest.mock("../auth.service", () => {
+  const actual = jest.requireActual("../auth.service");
+  return {
+    __esModule: true,
+    AuthService: actual.AuthService,
+    default: {
+      getMe: jest.fn(),
+      updateMe: jest.fn(),
+      signup: jest.fn(),
+      deleteMe: jest.fn(),
+      login: jest.fn(),
+      updatePassword: jest.fn(),
+      logout: jest.fn(),
+      getJwtCookieOptions: jest.fn(),
+    },
+  };
+});
+
+jest.mock("../utils/services/auth-action.service", () => ({
+  __esModule: true,
+  default: {
+    getAll: jest.fn(),
+    getByResource: jest.fn(),
+  },
 }));
 
 jest.mock("../../base/base.service", () => ({
@@ -29,10 +44,22 @@ jest.mock("../../base/base.service", () => ({
   ArkosPrismaService: jest.fn(),
 }));
 
-const MockedArkosPrismaService = ArkosPrismaService as jest.MockedClass<typeof ArkosPrismaService>;
-
 jest.mock("../../../utils/helpers/prisma.helpers", () => ({
   getPrismaInstance: jest.fn(),
+}));
+
+jest.mock("../../../utils/dynamic-loader", () => ({
+  getModuleComponents: jest.fn(),
+  getPrismaModelRelations: jest.fn(),
+  getModels: jest.fn(() => []),
+  getModelUniqueFields: jest.fn(() => []),
+  models: [],
+  prismaModelRelationFields: {},
+}));
+
+jest.mock("../../../server", () => ({
+  getArkosConfig: jest.fn(),
+  close: jest.fn(),
 }));
 
 jest.mock("../../../components/arkos-route-hook/reader", () => ({
@@ -41,52 +68,66 @@ jest.mock("../../../components/arkos-route-hook/reader", () => ({
   },
 }));
 
-jest.mock("../../../server", () => ({
-  getArkosConfig: jest.fn(),
-  close: jest.fn(),
+jest.mock("../../../components/arkos-loadable-registry", () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(),
+  },
 }));
 
-const mockGetHooks = routeHookReader.getHooks as jest.Mock;
+const mockedAuthService = authService as unknown as Record<string, jest.Mock>;
+const mockedActionService = authActionService as unknown as Record<
+  string,
+  jest.Mock
+>;
+
+/**
+ * Builds an `AuthController` with the given `after` route hooks
+ * (e.g. `{ afterGetMe: true }`) and an optional `ArkosRouteHook("auth", { service })`.
+ */
+const authControllerFactory = (
+  hooks: Record<string, boolean> = {},
+  service?: AuthService,
+) => {
+  (routeHookReader.getHooks as jest.Mock).mockImplementation(
+    (_module: string, operation: string) =>
+      hooks[`after${operation.charAt(0).toUpperCase()}${operation.slice(1)}`]
+        ? { after: [jest.fn()] }
+        : {},
+  );
+  (loadableRegistry.getItem as jest.Mock).mockReturnValue(
+    service ? { _configs: { service } } : null,
+  );
+
+  const controller = new AuthController();
+  if (service) (controller as any).getAuthService();
+
+  return controller;
+};
 
 describe("Auth Controller", () => {
   let req: any;
   let res: any;
   let next: any;
-  let mockPrisma: any;
-  let authController: AuthController;
-  let userService: any = {
-    findOne: jest.fn(),
-    updateOne: jest.fn(),
-    createOne: jest.fn(),
+  let authController: any;
+
+  const publicUser = {
+    id: "user-id-123",
+    username: "testuser",
+    email: "test@example.com",
   };
 
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.resetAllMocks();
 
-    (authService.getJwtCookieOptions as jest.Mock).mockReturnValue({});
-    mockGetHooks.mockReturnValue(null);
-
-    mockPrisma = {
-      user: {
-        findFirst: jest.fn(),
-        update: jest.fn(),
-      },
-    };
-    MockedArkosPrismaService.mockImplementation(() => userService);
-
-    (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
+    mockedAuthService.getJwtCookieOptions.mockReturnValue({});
 
     req = {
-      user: {
-        id: "user-id-123",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedPassword",
-        isVerified: true,
-        active: true,
-      },
+      user: { ...publicUser, password: "hashedPassword" },
+      accessToken: "jwt-token",
       body: {},
       query: {},
+      params: {},
       secure: false,
       headers: {},
     };
@@ -101,73 +142,166 @@ describe("Auth Controller", () => {
 
     next = jest.fn();
 
-    authController = new AuthController();
+    authController = authControllerFactory();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  describe("defaultExcludedUserFields", () => {
+    it("should exclude the password field", () => {
+      expect(defaultExcludedUserFields).toEqual({ password: false });
+    });
+  });
+
+  describe("custom service", () => {
+    it("should throw when service is not an AuthService instance", () => {
+      expect(() => authControllerFactory({}, {} as any)).toThrow(
+        "The `service` passed to ArkosRouteHook(\"auth\") must be an instance of a class that extends AuthService.",
+      );
+    });
+
+    it("should call the custom service instead of the default one", async () => {
+      const custom = Object.assign(new AuthService(), {
+        getMe: jest.fn().mockResolvedValue(publicUser),
+      });
+      const controller = authControllerFactory({}, custom);
+      req.prismaQueryOptions = { include: { profile: true } };
+
+      await controller.getMe(req, res, next);
+
+      expect(custom.getMe).toHaveBeenCalledWith("user-id-123", {
+        include: { profile: true },
+      });
+      expect(mockedAuthService.getMe).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ data: publicUser });
+    });
+
+    it("should use the custom login result", async () => {
+      const custom = Object.assign(new AuthService(), {
+        login: jest
+          .fn()
+          .mockResolvedValue({ user: publicUser, accessToken: "custom-token" }),
+      });
+      const controller = authControllerFactory({}, custom);
+      req.body = { username: "testuser", password: "Password123" };
+
+      await controller.login(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({ accessToken: "custom-token" });
+      expect(mockedAuthService.login).not.toHaveBeenCalled();
+    });
+
+    it("should call the custom logout service and clear the cookie", async () => {
+      const custom = Object.assign(new AuthService(), {
+        logout: jest.fn().mockResolvedValue(undefined),
+      });
+      const controller = authControllerFactory({}, custom);
+
+      await controller.logout(req, res, next);
+
+      expect(custom.logout).toHaveBeenCalledWith("user-id-123", "jwt-token");
+      expect(res.cookie).toHaveBeenCalledWith(
+        "arkos_access_token",
+        "no-token",
+        expect.objectContaining({ httpOnly: true }),
+      );
+      expect(res.status).toHaveBeenCalledWith(204);
+    });
+
+    it.each([
+      ["getMe"],
+      ["updateMe"],
+      ["signup"],
+      ["deleteMe"],
+      ["login"],
+      ["updatePassword"],
+    ] as const)(
+      "should forward an error when custom %s returns no required data",
+      async (method) => {
+        const custom = Object.assign(new AuthService(), {
+          [method]: jest.fn().mockResolvedValue(null),
+        });
+        const controller = authControllerFactory({}, custom);
+        req.body = { username: "testuser", password: "Password123" };
+
+        await (controller as any)[method](req, res, next);
+
+        expect(next).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message: `Custom auth service method ${method} didn't return the required data`,
+          }),
+        );
+        expect(res.json).not.toHaveBeenCalled();
+      },
+    );
+
+    it("should reject a custom login result without an access token", async () => {
+      const custom = Object.assign(new AuthService(), {
+        login: jest.fn().mockResolvedValue({ user: publicUser }),
+      });
+      const controller = authControllerFactory({}, custom);
+      req.body = { username: "testuser", password: "Password123" };
+
+      await controller.login(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("login"),
+        }),
+      );
+    });
+
+    it("should reject a custom updatePassword result without an access token", async () => {
+      const custom = Object.assign(new AuthService(), {
+        updatePassword: jest.fn().mockResolvedValue({}),
+      });
+      const controller = authControllerFactory({}, custom);
+
+      await controller.updatePassword(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining("updatePassword"),
+        }),
+      );
+    });
   });
 
   describe("getMe", () => {
-    it("should get the current user and return it", async () => {
-      const user = {
-        id: "user-id-123",
-        username: "testuser",
-        email: "test@example.com",
-      };
-
-      userService.findOne.mockResolvedValueOnce(user);
-      MockedArkosPrismaService.mockImplementation(() => userService);
+    it("should call the service with the user id and query options and return the user", async () => {
+      mockedAuthService.getMe.mockResolvedValueOnce(publicUser);
+      req.prismaQueryOptions = { select: { id: true } };
 
       await authController.getMe(req, res, next);
 
-      expect(userService.findOne).toHaveBeenCalledWith(
-        { id: "user-id-123" },
-        {}
-      );
+      expect(mockedAuthService.getMe).toHaveBeenCalledWith("user-id-123", {
+        select: { id: true },
+      });
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ data: user });
+      expect(res.json).toHaveBeenCalledWith({ data: publicUser });
     });
 
-    it("should remove excluded fields from the user object", async () => {
-      const fullUser = {
-        id: "user-id-123",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedPassword",
-        passwordChangedAt: new Date(),
-        active: true,
-      };
+    it("should set the interceptor state and call next when afterGetMe is provided", async () => {
+      mockedAuthService.getMe.mockResolvedValueOnce(publicUser);
+      const controller = authControllerFactory({ afterGetMe: true });
 
-      req.user = { ...fullUser };
-      userService.findOne.mockResolvedValueOnce(fullUser);
+      await controller.getMe(req, res, next);
 
-      await authController.getMe(req, res, next);
-
-      Object.keys(defaultExcludedUserFields).forEach((field) => {
-        expect(fullUser[field as keyof typeof fullUser]).toBeUndefined();
-      });
-    });
-
-    it("should call next middleware when afterGetMe hook is registered", async () => {
-      mockGetHooks.mockImplementation((module: string, operation: string) => {
-        if (module === "auth" && operation === "getMe")
-          return { after: jest.fn() };
-        return null;
-      });
-
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser",
-        email: "test@example.com",
-      });
-
-      await authController.getMe(req, res, next);
-
-      expect(req.responseData).toBeDefined();
+      expect(req.responseData).toEqual({ data: publicUser });
+      expect(res.locals.data).toEqual({ data: publicUser });
+      expect(res.originalData).toEqual({ data: publicUser });
       expect(req.responseStatus).toBe(200);
-      expect(next).toHaveBeenCalled();
+      expect(res.locals.status).toBe(200);
+      expect(res.originalStatus).toBe(200);
+      expect(next).toHaveBeenCalledWith();
       expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should forward service errors to next", async () => {
+      const error = new Error("boom");
+      mockedAuthService.getMe.mockRejectedValueOnce(error);
+
+      await authController.getMe(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 
@@ -178,22 +312,40 @@ describe("Auth Controller", () => {
       expect(res.cookie).toHaveBeenCalledWith(
         "arkos_access_token",
         "no-token",
-        expect.objectContaining({
-          httpOnly: true,
-        })
+        expect.objectContaining({ httpOnly: true }),
       );
       expect(res.status).toHaveBeenCalledWith(204);
       expect(res.json).toHaveBeenCalled();
     });
 
-    it("should call next middleware when afterLogout hook is registered", async () => {
-      mockGetHooks.mockImplementation((module: string, operation: string) => {
-        if (module === "auth" && operation === "logout")
-          return { after: jest.fn() };
-        return null;
-      });
+    it("should call the service with the user id and access token", async () => {
+      await authController.logout(req, res, next);
+
+      expect(mockedAuthService.logout).toHaveBeenCalledWith(
+        "user-id-123",
+        "jwt-token",
+      );
+    });
+
+    it("should forward an error when the user or access token is missing", async () => {
+      req.user = undefined;
+      req.accessToken = undefined;
 
       await authController.logout(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Logout requires an authenticated user and an access token",
+        }),
+      );
+      expect(mockedAuthService.logout).not.toHaveBeenCalled();
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
+
+    it("should call next middleware when afterLogout is provided", async () => {
+      const controller = authControllerFactory({ afterLogout: true });
+
+      await controller.logout(req, res, next);
 
       expect(req.responseData).toBeNull();
       expect(req.responseStatus).toBe(204);
@@ -203,163 +355,91 @@ describe("Auth Controller", () => {
   });
 
   describe("login", () => {
-    it("should return 400 if username or password is missing", async () => {
-      req.body = { username: "testuser" };
-
-      await authController.login(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 400,
-          message: expect.stringContaining("username and password"),
-        })
-      );
-    });
-
-    it("should use default username field from config when not specified in query", async () => {
+    beforeEach(() => {
       req.body = { username: "testuser", password: "Password123" };
-
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-      });
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
-
-      await authController.login(req, res, next);
-
-      expect(userService.findOne).toHaveBeenCalledWith(
-        { username: "testuser" },
-        {}
-      );
-    });
-
-    it("should use username field from query parameter when provided", async () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        authentication: {
-          login: {
-            allowedUsernames: ["email"],
-          },
-        },
-      });
-
-      req = {
-        body: { email: "test@arkosjs.com", password: "Password123" },
-        query: { usernameField: "email" },
-      };
-
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        email: "test@arkosjs.com",
-        password: "hashedPassword",
-      });
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
-
-      await authController.login(req, res, next);
-
-      expect(userService.findOne).toHaveBeenCalledWith(
-        { email: "test@arkosjs.com" },
-        {}
-      );
-    });
-
-    it("should return 401 if user is not found", async () => {
-      req.body = { username: "nonexistentuser", password: "Password123" };
-      userService.findOne.mockResolvedValueOnce(null);
-
-      await authController.login(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 401,
-          message: expect.stringContaining("Incorrect username or password"),
-        })
-      );
-    });
-
-    it("should return 401 if password is incorrect", async () => {
-      req.body = { username: "testuser", password: "WrongPassword123" };
-
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-      });
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(false);
-
-      await authController.login(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 401,
-          message: expect.stringContaining("Incorrect username or password"),
-        })
-      );
-    });
-
-    it('should set cookie and return token in response when config is "both"', async () => {
-      req.body = { username: "testuser", password: "Password123" };
-
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-      });
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
-
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        authentication: {
-          login: {
-            sendAccessTokenThrough: "both",
-          },
-        },
-      });
-
-      await authController.login(req, res, next);
-
-      expect(res.cookie).toHaveBeenCalledWith(
-        "arkos_access_token",
-        "jwt-token-123",
-        expect.any(Object)
-      );
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      mockedAuthService.login.mockResolvedValue({
+        user: publicUser,
         accessToken: "jwt-token-123",
       });
     });
 
-    it('should only set cookie when config is "cookie-only"', async () => {
-      (getArkosConfig as jest.Mock).mockReturnValueOnce({
-        authentication: {
-          login: {
-            sendAccessTokenThrough: "cookie-only",
-          },
+    it("should call the service with the body and the default username field", async () => {
+      req.prismaQueryOptions = { include: { profile: true } };
+
+      await authController.login(req, res, next);
+
+      expect(mockedAuthService.login).toHaveBeenCalledWith(
+        {
+          username: "testuser",
+          password: "Password123",
+          usernameField: "username",
         },
+        { include: { profile: true } },
+      );
+    });
+
+    it("should use the username field from the query parameter when allowed", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { login: { allowedUsernames: ["email"] } },
       });
+      req = {
+        body: { email: "test@arkosjs.com", password: "Password123" },
+        query: { usernameField: "email" },
+        headers: {},
+        secure: false,
+      };
 
-      req.body = { username: "testuser321", password: "Password123" };
+      await authController.login(req, res, next);
 
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser321",
-        password: "hashedPassword",
+      expect(mockedAuthService.login).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: "test@arkosjs.com",
+          usernameField: "email",
+        }),
+        undefined,
+      );
+    });
+
+    it("should send token in cookie and response by default", async () => {
+      await authController.login(req, res, next);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        "arkos_access_token",
+        "jwt-token-123",
+        {},
+      );
+      expect(mockedAuthService.getJwtCookieOptions).toHaveBeenCalledWith(req);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ accessToken: "jwt-token-123" });
+      expect(req.accessToken).toBe("jwt-token-123");
+    });
+
+    it('should set cookie and return token in response when config is "both"', async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { login: { sendAccessTokenThrough: "both" } },
       });
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
       await authController.login(req, res, next);
 
       expect(res.cookie).toHaveBeenCalledWith(
         "arkos_access_token",
         "jwt-token-123",
-        expect.any(Object)
+        expect.any(Object),
+      );
+      expect(res.json).toHaveBeenCalledWith({ accessToken: "jwt-token-123" });
+    });
+
+    it('should only set cookie when config is "cookie-only"', async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { login: { sendAccessTokenThrough: "cookie-only" } },
+      });
+
+      await authController.login(req, res, next);
+
+      expect(res.cookie).toHaveBeenCalledWith(
+        "arkos_access_token",
+        "jwt-token-123",
+        expect.any(Object),
       );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.send).toHaveBeenCalled();
@@ -367,454 +447,396 @@ describe("Auth Controller", () => {
     });
 
     it('should only return token in response when config is "response-only"', async () => {
-      req.body = { username: "testuser", password: "Password123" };
-
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-      });
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
-
-      (getArkosConfig as jest.Mock).mockReturnValueOnce({
-        authentication: {
-          login: {
-            sendAccessTokenThrough: "response-only",
-          },
-        },
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { login: { sendAccessTokenThrough: "response-only" } },
       });
 
       await authController.login(req, res, next);
 
       expect(res.cookie).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        accessToken: "jwt-token-123",
-      });
+      expect(res.json).toHaveBeenCalledWith({ accessToken: "jwt-token-123" });
     });
 
-    it("should call next middleware when afterLogin hook is registered and send cookies strategy response-only or both", async () => {
+    it("should call next with response data and user when afterLogin is provided", async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({
-        authentication: {
-          login: {
-            sendAccessTokenThrough: "both",
-          },
-        },
+        authentication: { login: { sendAccessTokenThrough: "both" } },
       });
+      const controller = authControllerFactory({ afterLogin: true });
 
-      mockGetHooks.mockImplementation((module: string, operation: string) => {
-        if (module === "auth" && operation === "login")
-          return { after: jest.fn() };
-        return null;
+      await controller.login(req, res, next);
+
+      expect(req.responseData).toEqual({ accessToken: "jwt-token-123" });
+      expect(res.locals.data).toEqual({ accessToken: "jwt-token-123" });
+      expect(res.originalData).toEqual({ accessToken: "jwt-token-123" });
+      expect(req.additionalData).toEqual({ user: publicUser });
+      expect(res.locals.additional).toEqual({ user: publicUser });
+      expect(req.responseStatus).toBe(200);
+      expect(res.locals.status).toBe(200);
+      expect(res.originalStatus).toBe(200);
+      expect(next).toHaveBeenCalledWith();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should not expose the token in response data when afterLogin is provided with cookie-only", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { login: { sendAccessTokenThrough: "cookie-only" } },
       });
+      const controller = authControllerFactory({ afterLogin: true });
 
-      req.body = { username: "testuser", password: "Password123" };
+      await controller.login(req, res, next);
 
-      userService.findOne.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-      });
+      expect(req.responseData).toBeUndefined();
+      expect(res.cookie).toHaveBeenCalled();
+      expect(next).toHaveBeenCalled();
+    });
 
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
+    it("should forward service errors to next", async () => {
+      const error = new Error("Incorrect username or password");
+      mockedAuthService.login.mockRejectedValueOnce(error);
 
       await authController.login(req, res, next);
 
-      expect(req.responseData).toEqual({ accessToken: "jwt-token-123" });
-      expect(req.responseStatus).toBe(200);
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(error);
+      expect(res.cookie).not.toHaveBeenCalled();
     });
   });
 
   describe("signup", () => {
-    it("should create a new user and return 201", async () => {
+    beforeEach(() => {
       req.body = {
         username: "newuser",
         email: "newuser@example.com",
         password: "Password123",
       };
-
-      const createdUser = {
-        id: "new-user-id",
-        username: "newuser",
-        email: "newuser@example.com",
-        password: "hashedPassword",
-        active: true,
-      };
-
-      userService.createOne.mockResolvedValueOnce({ ...createdUser });
-
-      await authController.signup(req, res, next);
-
-      expect(userService.createOne).toHaveBeenCalledWith({ ...req.body }, {});
-      expect(res.status).toHaveBeenCalledWith(201);
-
-      const responseUser = res.json.mock.calls[0][0].data;
-      Object.keys(defaultExcludedUserFields).forEach((field) => {
-        expect(responseUser[field]).toBeUndefined();
-      });
     });
 
-    it("should call next middleware when afterSignup hook is registered", async () => {
-      mockGetHooks.mockImplementation((module: string, operation: string) => {
-        if (module === "auth" && operation === "signup")
-          return { after: jest.fn() };
-        return null;
-      });
-
-      req.body = {
-        username: "newuser",
-        email: "newuser@example.com",
-        password: "Password123",
-      };
-
-      const createdUser = {
-        id: "new-user-id",
-        username: "newuser",
-        email: "newuser@example.com",
-        password: "hashedPassword",
-      };
-
-      userService.createOne.mockResolvedValueOnce({ ...createdUser });
+    it("should call the service and return 201", async () => {
+      const created = { id: "new-user-id", username: "newuser" };
+      mockedAuthService.signup.mockResolvedValueOnce(created);
+      req.prismaQueryOptions = { include: { profile: true } };
 
       await authController.signup(req, res, next);
 
-      expect(req.responseData).toEqual({ data: createdUser });
+      expect(mockedAuthService.signup).toHaveBeenCalledWith(req.body, {
+        include: { profile: true },
+      });
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith({ data: created });
+    });
+
+    it("should call next middleware when afterSignup is provided", async () => {
+      const created = { id: "new-user-id", username: "newuser" };
+      mockedAuthService.signup.mockResolvedValueOnce(created);
+      const controller = authControllerFactory({ afterSignup: true });
+
+      await controller.signup(req, res, next);
+
+      expect(req.responseData).toEqual({ data: created });
       expect(req.responseStatus).toBe(201);
+      expect(res.locals.status).toBe(201);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should forward service errors to next", async () => {
+      const error = new Error("boom");
+      mockedAuthService.signup.mockRejectedValueOnce(error);
+
+      await authController.signup(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 
   describe("updateMe", () => {
-    it("should return 400 if password field is included in request body", async () => {
-      req.body = {
-        username: "updateduser",
-        password: "NewPassword123",
-      };
-
-      await authController.updateMe(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 400,
-          message:
-            "In order to update password use the update-password endpoint.",
-          code: "InvalidFieldPassword",
-        })
-      );
+    beforeEach(() => {
+      req.body = { username: "updateduser", email: "updated@example.com" };
     });
 
-    it("should update user data and return 200 on success", async () => {
-      req.body = {
-        username: "updateduser",
-        email: "updated@example.com",
-      };
-
-      const updatedUser = {
-        id: "user-id-123",
-        username: "updateduser",
-        email: "updated@example.com",
-        password: "hashedPassword",
-        passwordChangedAt: new Date(),
-        active: true,
-      };
-
-      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
-
-      await authController.updateMe(req, res, next);
-
-      expect(userService.updateOne).toHaveBeenCalledWith(
-        { id: "user-id-123" },
-        req.body,
-        {}
-      );
-      expect(res.status).toHaveBeenCalledWith(200);
-
-      const responseUser = res.json.mock.calls[0][0].data;
-      Object.keys(defaultExcludedUserFields).forEach((field) => {
-        expect(responseUser[field]).toBeUndefined();
-      });
-    });
-
-    it("should use prismaQueryOptions from request when available", async () => {
-      req.body = { username: "updateduser" };
+    it("should call the service with id, body and query options and return 200", async () => {
+      const updated = { id: "user-id-123", ...req.body };
+      mockedAuthService.updateMe.mockResolvedValueOnce(updated);
       req.prismaQueryOptions = { include: { profile: true } };
 
-      const updatedUser = {
-        id: "user-id-123",
-        username: "updateduser",
-        email: "test@example.com",
-      };
-
-      userService.updateOne.mockResolvedValueOnce(updatedUser);
-
       await authController.updateMe(req, res, next);
 
-      expect(userService.updateOne).toHaveBeenCalledWith(
-        { id: "user-id-123" },
+      expect(mockedAuthService.updateMe).toHaveBeenCalledWith(
+        "user-id-123",
         req.body,
-        { include: { profile: true } }
+        { include: { profile: true } },
       );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ data: updated });
     });
 
-    it("should call next middleware when afterUpdateMe hook is registered", async () => {
-      mockGetHooks.mockImplementation((module: string, operation: string) => {
-        if (module === "auth" && operation === "updateMe")
-          return { after: jest.fn() };
-        return null;
-      });
+    it("should call next middleware when afterUpdateMe is provided", async () => {
+      const updated = { id: "user-id-123", ...req.body };
+      mockedAuthService.updateMe.mockResolvedValueOnce(updated);
+      const controller = authControllerFactory({ afterUpdateMe: true });
 
-      req.body = {
-        username: "updateduser",
-        email: "updated@example.com",
-      };
+      await controller.updateMe(req, res, next);
 
-      const updatedUser = {
-        id: "user-id-123",
-        username: "updateduser",
-        email: "updated@example.com",
-      };
-
-      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
-
-      await authController.updateMe(req, res, next);
-
-      expect(req.responseData).toEqual({ data: updatedUser });
+      expect(req.responseData).toEqual({ data: updated });
       expect(req.responseStatus).toBe(200);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
     });
 
-    it("should remove excluded fields from user object before responding", async () => {
-      req.body = { username: "updateduser" };
-
-      const updatedUserWithSensitiveData = {
-        id: "user-id-123",
-        username: "updateduser",
-        email: "test@example.com",
-        password: "hashedPassword",
-        passwordChangedAt: new Date(),
-        active: true,
-      };
-
-      userService.updateOne.mockResolvedValueOnce({
-        ...updatedUserWithSensitiveData,
-      });
+    it("should forward service errors to next", async () => {
+      const error = new Error(
+        "In order to update password use the update-password endpoint.",
+      );
+      mockedAuthService.updateMe.mockRejectedValueOnce(error);
 
       await authController.updateMe(req, res, next);
 
-      const responseUser = res.json.mock.calls[0][0].data;
-      expect(responseUser.password).toBeUndefined();
-      expect(responseUser.username).toBe("updateduser");
-      expect(responseUser.email).toBe("test@example.com");
-      expect(responseUser.id).toBe("user-id-123");
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 
   describe("updatePassword", () => {
-    it("should return 400 if currentPassword or newPassword is missing", async () => {
-      req.body = { currentPassword: "CurrentPassword123" };
-
-      await authController.updatePassword(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 400,
-          message: expect.stringContaining(
-            "currentPassword and newPassword are required"
-          ),
-        })
-      );
-    });
-
-    it("should return 404 if user is not found or inactive", async () => {
-      req.user = null;
+    beforeEach(() => {
       req.body = {
         currentPassword: "CurrentPassword123",
         newPassword: "NewPassword123",
       };
+      mockedAuthService.updatePassword.mockResolvedValue({
+        accessToken: "new-jwt-token",
+      });
+    });
 
+    it("should call the service with the user id and body", async () => {
       await authController.updatePassword(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 404,
-          message: expect.stringContaining("User not found"),
-        })
+      expect(mockedAuthService.updatePassword).toHaveBeenCalledWith(
+        "user-id-123",
+        req.body,
       );
     });
 
-    it("should return 400 if current password is incorrect", async () => {
-      req.user = {
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-        isVerified: true,
-      };
-
-      req.body = {
-        currentPassword: "WrongPassword123",
-        newPassword: "NewPassword123",
-      };
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(false);
-
+    it("should set cookie and return token by default", async () => {
       await authController.updatePassword(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 400,
-          message: expect.stringContaining("Current password is incorrect"),
-        })
+      expect(res.cookie).toHaveBeenCalledWith(
+        "arkos_access_token",
+        "new-jwt-token",
+        {},
       );
-    });
-
-
-    it("should update password and return 200 on success", async () => {
-      req.user = {
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-        isVerified: true,
-      };
-
-      req.body = {
-        currentPassword: "CurrentPassword123",
-        newPassword: "NewPassword123",
-      };
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.hashPassword as jest.Mock).mockResolvedValueOnce(
-        "newHashedPassword"
-      );
-
-      await authController.updatePassword(req, res, next);
-
-      expect(userService.updateOne).toHaveBeenCalledWith(
-        { id: "user-id-123" },
-        {
-          password: "newHashedPassword",
-          passwordChangedAt: expect.stringContaining(
-            String(new Date().getFullYear())
-          ),
-        }
-      );
-
       expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        status: "success",
+        message: "Password updated successfully!",
+        accessToken: "new-jwt-token",
+      });
+      expect(req.accessToken).toBe("new-jwt-token");
+    });
+
+    it('should only set cookie when config is "cookie-only"', async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { login: { sendAccessTokenThrough: "cookie-only" } },
+      });
+
+      await authController.updatePassword(req, res, next);
+
+      expect(res.cookie).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({
         status: "success",
         message: "Password updated successfully!",
       });
     });
 
-    it("should call next middleware when afterUpdatePassword hook is registered", async () => {
-      mockGetHooks.mockImplementation((module: string, operation: string) => {
-        if (module === "auth" && operation === "updatePassword")
-          return { after: jest.fn() };
-        return null;
+    it('should only return token in response when config is "response-only"', async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { login: { sendAccessTokenThrough: "response-only" } },
       });
 
-      req.user = {
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-        isVerified: true,
-      };
-
-      req.body = {
-        currentPassword: "CurrentPassword123",
-        newPassword: "NewPassword123",
-      };
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.hashPassword as jest.Mock).mockResolvedValueOnce(
-        "newHashedPassword123"
-      );
-
       await authController.updatePassword(req, res, next);
+
+      expect(res.cookie).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({
+        status: "success",
+        message: "Password updated successfully!",
+        accessToken: "new-jwt-token",
+      });
+    });
+
+    it("should call next middleware when afterUpdatePassword is provided", async () => {
+      const controller = authControllerFactory({ afterUpdatePassword: true });
+
+      await controller.updatePassword(req, res, next);
 
       expect(req.responseData).toEqual({
         status: "success",
         message: "Password updated successfully!",
+        accessToken: "new-jwt-token",
       });
       expect(req.responseStatus).toBe(200);
       expect(req.additionalData).toEqual({ user: req.user });
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
     });
+
+    it("should forward service errors to next", async () => {
+      const error = new Error("Current password is incorrect");
+      mockedAuthService.updatePassword.mockRejectedValueOnce(error);
+
+      await authController.updatePassword(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(error);
+      expect(res.cookie).not.toHaveBeenCalled();
+    });
   });
 
   describe("deleteMe", () => {
-    it("should mark user account as deleted and return 200", async () => {
-      const updatedUser = {
-        id: "user-id-123",
-        username: "testuser",
-        email: "test@example.com",
+    it("should call the service and return the success message", async () => {
+      mockedAuthService.deleteMe.mockResolvedValueOnce({
+        ...publicUser,
         deletedSelfAccountAt: new Date().toISOString(),
-      };
-
-      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
+      });
+      req.prismaQueryOptions = { select: { id: true } };
 
       await authController.deleteMe(req, res, next);
 
-      expect(userService.updateOne).toHaveBeenCalledWith(
-        { id: "user-id-123" },
-        { deletedSelfAccountAt: expect.any(String) },
-        {}
-      );
+      expect(mockedAuthService.deleteMe).toHaveBeenCalledWith("user-id-123", {
+        select: { id: true },
+      });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         message: "Account deleted successfully",
       });
     });
 
-    it("should call next middleware when afterDeleteMe hook is registered", async () => {
-      mockGetHooks.mockImplementation((module: string, operation: string) => {
-        if (module === "auth" && operation === "deleteMe")
-          return { after: jest.fn() };
-        return null;
-      });
-
-      const updatedUser = {
-        id: "user-id-123",
-        username: "testuser",
-        email: "test@example.com",
+    it("should call next middleware when afterDeleteMe is provided", async () => {
+      const deleted = {
+        ...publicUser,
         deletedSelfAccountAt: new Date().toISOString(),
       };
+      mockedAuthService.deleteMe.mockResolvedValueOnce(deleted);
+      const controller = authControllerFactory({ afterDeleteMe: true });
 
-      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
+      await controller.deleteMe(req, res, next);
 
-      await authController.deleteMe(req, res, next);
-
-      expect(req.responseData).toEqual({ data: updatedUser });
+      expect(req.responseData).toEqual({ data: deleted });
       expect(req.responseStatus).toBe(200);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
     });
 
-    it("should remove excluded fields from user object", async () => {
-      const updatedUserWithSensitiveData = {
-        id: "user-id-123",
-        username: "testuser",
-        email: "test@example.com",
-        password: "hashedPassword",
-        deletedSelfAccountAt: new Date().toISOString(),
-      };
-
-      userService.updateOne.mockResolvedValueOnce({
-        ...updatedUserWithSensitiveData,
-      });
+    it("should forward service errors to next", async () => {
+      const error = new Error("boom");
+      mockedAuthService.deleteMe.mockRejectedValueOnce(error);
 
       await authController.deleteMe(req, res, next);
 
+      expect(next).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe("findManyAuthAction", () => {
+    it("should return all auth actions", async () => {
+      mockedActionService.getAll.mockReturnValueOnce([
+        { action: "View", resource: "user", roles: ["admin"] },
+        { action: "Create", resource: "user", roles: ["admin"] },
+      ]);
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+
+      await authController.findManyAuthAction(req, res, next);
+
       expect(res.json).toHaveBeenCalledWith({
-        message: "Account deleted successfully",
+        total: 2,
+        results: 2,
+        data: [
+          { action: "View", resource: "user", roles: ["admin"] },
+          { action: "Create", resource: "user", roles: ["admin"] },
+        ],
+      });
+    });
+
+    it("should strip roles in dynamic mode", async () => {
+      mockedActionService.getAll.mockReturnValueOnce([
+        { action: "View", resource: "user", roles: ["admin"] },
+      ]);
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "dynamic" },
+      });
+
+      await authController.findManyAuthAction(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        total: 1,
+        results: 1,
+        data: [{ action: "View", resource: "user" }],
+      });
+    });
+  });
+
+  describe("findOneAuthAction", () => {
+    it("should return 400 when resourceName is missing", async () => {
+      req.params = {};
+
+      await authController.findOneAuthAction(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 400,
+          message: "Please provide a resoureName",
+        }),
+      );
+    });
+
+    it("should return 404 when no auth actions exist for the resource", async () => {
+      req.params = { resourceName: "unknown" };
+      mockedActionService.getByResource.mockReturnValueOnce(undefined);
+
+      await authController.findOneAuthAction(req, res, next);
+
+      expect(mockedActionService.getByResource).toHaveBeenCalledWith("unknown");
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 404,
+          message: "No auth action with resource name unknown",
+        }),
+      );
+    });
+
+    it("should return the auth actions of the resource", async () => {
+      req.params = { resourceName: "user" };
+      mockedActionService.getByResource.mockReturnValueOnce([
+        { action: "View", resource: "user", roles: ["admin"] },
+      ]);
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+
+      await authController.findOneAuthAction(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        total: 1,
+        results: 1,
+        data: [{ action: "View", resource: "user", roles: ["admin"] }],
+      });
+    });
+
+    it("should strip roles in dynamic mode", async () => {
+      req.params = { resourceName: "user" };
+      mockedActionService.getByResource.mockReturnValueOnce([
+        { action: "View", resource: "user", roles: ["admin"] },
+      ]);
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "dynamic" },
+      });
+
+      await authController.findOneAuthAction(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith({
+        total: 1,
+        results: 1,
+        data: [{ action: "View", resource: "user" }],
       });
     });
   });
 });
+

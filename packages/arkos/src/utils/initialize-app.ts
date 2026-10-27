@@ -13,6 +13,7 @@ import express from "express";
 import { userRequire } from "./helpers/global.helpers";
 import { existsSync, mkdirSync } from "fs";
 import sheu from "./sheu";
+import { validateUploadServingConfig } from "../modules/file-upload/utils/helpers/upload-serving-validation";
 
 export default function initializeApp(app: Arkos) {
   const config = getArkosConfig();
@@ -85,6 +86,8 @@ export default function initializeApp(app: Arkos) {
 
     app.use({ path: globalPrefix }, getSwaggerRouter(config, app));
   }
+
+  validateUploadServingConfig();
 
   return app;
 }

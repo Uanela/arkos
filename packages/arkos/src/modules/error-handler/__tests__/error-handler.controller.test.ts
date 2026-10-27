@@ -59,6 +59,13 @@ jest.mock("../utils/error-handler.helpers", () => {
     handleVersionMismatchError: jest.fn(
       () => new AppError("Version mismatch", 400)
     ),
+    handleNonExistingRecord: jest.fn(
+      () => new AppError("Record does not exist", 404)
+    ),
+    handlePrismaClientInitializationError: jest.fn(
+      () => new AppError("Initialization error", 500)
+    ),
+    handleDriverAdapterError: jest.fn(() => null),
     handleNetworkError: jest.fn(() => new AppError("Network error", 503)),
   };
 });

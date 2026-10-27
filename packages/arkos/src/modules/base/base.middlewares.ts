@@ -7,6 +7,7 @@ import {
   AuthPrismaQueryOptions,
 } from '../../types';
 import { getArkosConfig } from '../../server';
+import { isZodSchema } from '../../utils/dynamic-loader';
 import deepmerge from '../../utils/helpers/deepmerge.helper';
 import {
   AppError,
@@ -310,19 +311,19 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
               enumerable: true,
             });
           } catch (err: any) {
-            const resolver = validationConfig?.resolver;
-            const isZod = validationConfig?.resolver === 'zod';
+            const isZod = isZodSchema(validator);
 
             const prettifiedError = errorPrettifier.prettify(
-              resolver as any,
+              isZod ? 'zod' : ('class-validator' as any),
               err,
             );
+
             const error = prettifiedError[0];
             throw new AppError(
-              error.message,
+              error?.message || err?.message || `Request ${key} is invalid`,
               400,
               `InvalidRequest${pascalCase(key)}`,
-              isZod ? err.format() : err,
+              isZod && typeof err?.format === 'function' ? err.format() : err,
             );
           }
       }

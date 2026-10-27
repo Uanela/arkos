@@ -36,29 +36,16 @@ npm add -D tsx tsx-strict
 
 <Tabs items={["v1.6+", "v1.4–v1.5", "v1.3 and below"]}>
 <Tab value="v1.6+">
-Create `src/router.ts`:
-
-```ts title="src/router.ts"
-import { ArkosRouter } from "arkos";
-
-const router = ArkosRouter();
-
-router.get({ path: "/" }, (req, res) => {
-  res.json({ message: "Hello World" });
-});
-
-export default router;
-```
-
-Then create `src/app.ts`:
+Create `src/app.ts`:
 
 ```ts title="src/app.ts"
 import arkos from "arkos";
-import router from "./router";
 
 const app = arkos();
 
-app.use(router);
+app.get("/", (req, res) => {
+  res.json({ message: "Hello World" });
+});
 
 app.listen();
 ```
@@ -133,24 +120,39 @@ Open `http://localhost:8000` — you'll see:
 
 This small app is already running with compression, rate limiting, CORS, JSON body parsing, cookie parsing, query parsing, request logging, and security headers — all on by default. Every one of them is configurable or replaceable through `arkos.config.ts`. See [Global Middlewares](/docs/guides/global-middlewares) for the full list and options.
 
-## Add Another Route
+## Routing
 
 <Tabs items={["v1.6+", "v1.4–v1.5", "v1.3 and below"]}>
 <Tab value="v1.6+">
+Create `src/router.ts` for the new route:
+
 ```ts title="src/router.ts"
 import { ArkosRouter } from "arkos";
 
 const router = ArkosRouter();
-
-router.get({ path: "/" }, (req, res) => {
-  res.json({ message: "Hello World" });
-});
 
 router.get({ path: "/ping" }, (req, res) => {
   res.json({ pong: true });
 });
 
 export default router;
+```
+
+Then mount it in `src/app.ts`, leaving the Hello World route on `app`:
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import router from "./router";
+
+const app = arkos();
+
+app.get("/", (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+app.use(router);
+
+app.listen();
 ```
 </Tab>
 <Tab value="v1.4–v1.5">
@@ -189,7 +191,7 @@ export default router;
 </Tab>
 </Tabs>
 
-The `src/app.ts` file stays the same — just add more routes to `src/router.ts` as your app grows.
+Quick routes can stay on `app` like Hello World; group related ones into a router and mount it with `app.use(router)`. See [ArkosRouter](/docs/core-concepts/components/routers) for the full set of route options it accepts beyond `path`.
 
 ## What's Next
 

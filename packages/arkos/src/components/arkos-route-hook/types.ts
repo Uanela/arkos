@@ -1,5 +1,5 @@
 import { ArkosRouteConfig } from "../../exports";
-import { ArkosPrismaService } from "../../exports/services";
+import { ArkosPrismaService, AuthService } from "../../exports/services";
 import { PrismaModels } from "../../generated";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 
@@ -82,6 +82,9 @@ export interface ArkosRouteHookInstance<TModel extends Models> {
 export interface ArkosAuthRouteHookInstance {
   readonly __type: "ArkosRouteHook";
   readonly moduleName: "auth";
+  readonly _configs: {
+    readonly service?: AuthService;
+  };
 
   getMe(config: ArkosRouteHookMethodConfig): this;
   login(config: ArkosRouteHookMethodConfig): this;

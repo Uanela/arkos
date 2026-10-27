@@ -37,7 +37,6 @@ export {
   ArkosRouteHookInstance,
   ArkosPolicy,
   IArkosPolicy,
-  ArkosFile,
   isProduction,
 };
 

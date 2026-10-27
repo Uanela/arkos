@@ -1,36 +1,10 @@
-import { pageSchema } from 'fumadocs-core/source/schema';
+import { pageSchema } from "fumadocs-core/source/schema";
 import {
   defineCollections,
   defineConfig,
   defineDocs,
 } from "fumadocs-mdx/config";
 import z from "zod";
-
-function rehypeFixInvalidStyles() {
-  return (tree: any) => {
-    function walk(node: any) {
-      if (node.type === "element" && typeof node.properties?.style === "string") {
-        const cleaned = node.properties.style
-          .split(";")
-          .filter((decl: string) => {
-            const prop = decl.split(":")[0]?.trim();
-            return prop && !prop.startsWith("--");
-          })
-          .join(";");
-
-        if (cleaned.trim()) {
-          node.properties.style = cleaned;
-        } else {
-          delete node.properties.style;
-        }
-      }
-      if (Array.isArray(node.children)) {
-        node.children.forEach(walk);
-      }
-    }
-    walk(tree);
-  };
-}
 
 export const docs = defineDocs({
   dir: "content/docs",
@@ -41,11 +15,7 @@ export const docs = defineDocs({
   },
 });
 
-export default defineConfig({
-  mdxOptions: {
-    rehypePlugins: (v) => [...v, rehypeFixInvalidStyles],
-  },
-});
+export default defineConfig({});
 
 export const blogPosts = defineCollections({
   dir: "content/blog",
@@ -69,3 +39,4 @@ export const tutorialColletions = defineCollections({
       description: z.string().optional(),
     }),
 });
+

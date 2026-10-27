@@ -45,6 +45,11 @@ export interface GenerateConfig {
   attachModuleName?: boolean; // defaults to true
 }
 
+const fail = (message: string, options: GenerateOptions): never => {
+  if (options.shouldExit === false) throw new Error(message);
+  throw ExitError(message);
+};
+
 const generateFile = async (
   options: GenerateOptions,
   config: GenerateConfig
@@ -78,7 +83,7 @@ const generateFile = async (
 
   const modelName = rawName;
 
-  if (!modelName?.trim()) throw new Error("Module name is required!");
+  if (!modelName?.trim()) throw fail("Module name is required!", options);
 
   const isAllowedModule =
     config.allowedModules === "*" ||
@@ -88,12 +93,14 @@ const generateFile = async (
     config.allowedModules.includes(kebabCase(modelName));
 
   if (!isKnowModule)
-    throw new Error(
-      `Generate command are only available for know modules such as all prisma models, file-upload and auth. And you passed ${modelName}.`
+    throw fail(
+      `Generate command are only available for know modules such as all prisma models, file-upload and auth. And you passed ${modelName}.`,
+      options
     );
   else if (!isAllowedModule)
-    throw Error(
-      `${kebabCase(config.templateName).replaceAll("-", " ")} are not available for module ${modelName}`
+    throw fail(
+      `${kebabCase(config.templateName).replaceAll("-", " ")} are not available for module ${modelName}`,
+      options
     );
 
   if (config.customValidation) config.customValidation(modelName);

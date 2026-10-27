@@ -8,6 +8,9 @@ import {
   isUsingAuthentication,
 } from "../../../utils/helpers/arkos-config.helpers";
 import AppError from "../../error-handler/utils/app-error";
+import { ArkosPrismaService } from '../../base/base.service';
+import { createPrismaWhereClause } from '../utils/helpers/auth.controller.helpers';
+import { getArkosConfig as getServerArkosConfig } from '../../../server';
 
 const authService: any = authServiceImport;
 
@@ -18,6 +21,11 @@ jest.mock("process");
 jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../../utils/helpers/arkos-config.helpers");
 jest.mock("../../../server");
+
+jest.mock("../../base/base.service", () => ({
+  getBaseServices: jest.fn(),
+  ArkosPrismaService: jest.fn(),
+}));
 
 jest.mock("../../../utils/helpers/arkos-config.helpers", () => ({
   isAuthenticationEnabled: jest.fn(() => true),
@@ -96,6 +104,832 @@ describe("AuthService", () => {
     };
 
     (getArkosConfig as jest.Mock).mockReturnValue(mockConfig);
+    // `getDefaultUsernameField` (used by `login`) reads config from `src/server`
+    (getServerArkosConfig as jest.Mock).mockReturnValue(mockConfig);
+  });
+
+  describe("userService getter", () => {
+    it("should lazily create a single ArkosPrismaService for the user model", () => {
+      const instance = { findOne: jest.fn() };
+      (ArkosPrismaService as unknown as jest.Mock).mockImplementation(() => instance);
+      authService._userService = undefined;
+
+      const first = authService.userService;
+      const second = authService.userService;
+
+      expect(ArkosPrismaService).toHaveBeenCalledTimes(1);
+      expect(ArkosPrismaService).toHaveBeenCalledWith("user");
+      expect(first).toBe(instance);
+      expect(second).toBe(instance);
+    });
+  });
+
+  describe("user methods", () => {
+    let userService: any;
+
+    beforeEach(() => {
+      userService = {
+        findOne: jest.fn(),
+        updateOne: jest.fn(),
+        createOne: jest.fn(),
+      };
+      authService._userService = userService;
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    describe("getMe", () => {
+      it("should return the user without the password", async () => {
+        userService.findOne.mockResolvedValue({
+          id: "user-123",
+          username: "testuser",
+          password: "hashed",
+        });
+
+        const result = await authService.getMe("user-123");
+
+        expect(userService.findOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          {},
+        );
+        expect(result).toEqual({ id: "user-123", username: "testuser" });
+      });
+
+      it("should forward query options to the user service", async () => {
+        userService.findOne.mockResolvedValue({ id: "user-123" });
+        const options = { include: { profile: true } };
+
+        await authService.getMe("user-123", options);
+
+        expect(userService.findOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          options,
+        );
+      });
+
+      it("should return null when the user is not found", async () => {
+        userService.findOne.mockResolvedValue(null);
+
+        expect(await authService.getMe("missing")).toBeNull();
+      });
+    });
+
+    describe("updateMe", () => {
+      it("should reject when the data contains a password", async () => {
+        await expect(
+          authService.updateMe("user-123", { password: "NewPassword123" }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message:
+            "In order to update password use the update-password endpoint.",
+        });
+
+        expect(userService.updateOne).not.toHaveBeenCalled();
+      });
+
+      it("should update the user and return it without the password", async () => {
+        userService.updateOne.mockResolvedValue({
+          id: "user-123",
+          username: "updated",
+          password: "hashed",
+        });
+        const options = { include: { profile: true } };
+
+        const result = await authService.updateMe(
+          "user-123",
+          { username: "updated" },
+          options,
+        );
+
+        expect(userService.updateOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          { username: "updated" },
+          options,
+        );
+        expect(result).toEqual({ id: "user-123", username: "updated" });
+      });
+
+      it("should default query options to an empty object", async () => {
+        userService.updateOne.mockResolvedValue({ id: "user-123" });
+
+        await authService.updateMe("user-123", { username: "updated" });
+
+        expect(userService.updateOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          { username: "updated" },
+          {},
+        );
+      });
+    });
+
+    describe("signup", () => {
+      it("should create the user and return it without the password", async () => {
+        const data = {
+          username: "newuser",
+          email: "new@example.com",
+          password: "Password123",
+        };
+        userService.createOne.mockResolvedValue({
+          id: "new-id",
+          username: "newuser",
+          email: "new@example.com",
+          password: "hashed",
+        });
+
+        const result = await authService.signup(data);
+
+        expect(userService.createOne).toHaveBeenCalledWith(data, {});
+        expect(result).toEqual({
+          id: "new-id",
+          username: "newuser",
+          email: "new@example.com",
+        });
+      });
+
+      it("should forward query options to the user service", async () => {
+        userService.createOne.mockResolvedValue({ id: "new-id" });
+        const options = { include: { profile: true } };
+
+        await authService.signup({ username: "newuser" }, options);
+
+        expect(userService.createOne).toHaveBeenCalledWith(
+          { username: "newuser" },
+          options,
+        );
+      });
+    });
+
+    describe("deleteMe", () => {
+      it("should set deletedSelfAccountAt and return the user without the password", async () => {
+        userService.updateOne.mockResolvedValue({
+          id: "user-123",
+          deletedSelfAccountAt: "2026-01-01T00:00:00.000Z",
+          password: "hashed",
+        });
+
+        const result = await authService.deleteMe("user-123");
+
+        expect(userService.updateOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          { deletedSelfAccountAt: expect.any(String) },
+          {},
+        );
+        expect(result).toEqual({
+          id: "user-123",
+          deletedSelfAccountAt: "2026-01-01T00:00:00.000Z",
+        });
+      });
+
+      it("should forward query options to the user service", async () => {
+        userService.updateOne.mockResolvedValue({ id: "user-123" });
+        const options = { select: { id: true } };
+
+        await authService.deleteMe("user-123", options);
+
+        expect(userService.updateOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          { deletedSelfAccountAt: expect.any(String) },
+          options,
+        );
+      });
+    });
+
+    describe("login", () => {
+      const storedUser = {
+        id: "user-123",
+        username: "testuser",
+        password: "hashed",
+      };
+
+      beforeEach(() => {
+        jest.spyOn(authService, "signJwtToken").mockReturnValue("jwt-token");
+      });
+
+      it("should reject when the username is missing", async () => {
+        await expect(
+          authService.login({
+            usernameField: "username",
+            password: "Password123",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message: "Please provide both username and password",
+        });
+      });
+
+      it("should reject when the password is missing", async () => {
+        await expect(
+          authService.login({
+            usernameField: "username",
+            username: "testuser",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message: "Please provide both username and password",
+        });
+      });
+
+      it("should use the last segment of a nested field in the error message", async () => {
+        await expect(
+          authService.login({
+            usernameField: "profile.nickname",
+            password: "Password123",
+          }),
+        ).rejects.toMatchObject({
+          message: "Please provide both nickname and password",
+        });
+      });
+
+      it("should reject when the user is not found", async () => {
+        userService.findOne.mockResolvedValue(null);
+
+        await expect(
+          authService.login({
+            usernameField: "username",
+            username: "ghost",
+            password: "Password123",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 401,
+          message: "Incorrect username or password",
+        });
+      });
+
+      it("should reject when the password is incorrect", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(false);
+
+        await expect(
+          authService.login({
+            usernameField: "username",
+            username: "testuser",
+            password: "Wrong123",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 401,
+          message: "Incorrect username or password",
+        });
+        expect(authService.signJwtToken).not.toHaveBeenCalled();
+      });
+
+      it("should return the sanitized user and an access token", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        const compare = jest
+          .spyOn(authService, "isCorrectPassword")
+          .mockResolvedValue(true);
+
+        const result = await authService.login({
+          usernameField: "username",
+          username: "testuser",
+          password: "Password123",
+        });
+
+        expect(userService.findOne).toHaveBeenCalledWith(
+          createPrismaWhereClause("username", "testuser"),
+          {},
+        );
+        expect(compare).toHaveBeenCalledWith("Password123", "hashed");
+        expect(authService.signJwtToken).toHaveBeenCalledWith("user-123");
+        expect(result).toEqual({
+          user: { id: "user-123", username: "testuser" },
+          accessToken: "jwt-token",
+        });
+      });
+
+      it("should look up nested username fields", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+
+        await authService.login({
+          usernameField: "profile.nickname",
+          nickname: "nick",
+          password: "Password123",
+        });
+
+        expect(userService.findOne).toHaveBeenCalledWith(
+          createPrismaWhereClause("profile.nickname", "nick"),
+          {},
+        );
+      });
+
+      it("should infer the username field from the provided key", async () => {
+        userService.findOne.mockResolvedValue({
+          ...storedUser,
+          email: "john@example.com",
+        });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+
+        await authService.login({
+          email: "john@example.com",
+          password: "Password123",
+        });
+
+        expect(userService.findOne).toHaveBeenCalledWith(
+          createPrismaWhereClause("email", "john@example.com"),
+          {},
+        );
+      });
+
+      it("should fall back to the configured default field when no username key is given", async () => {
+        mockConfig.authentication.login = { allowedUsernames: ["email"] };
+
+        await expect(
+          authService.login({ password: "Password123" }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message: "Please provide both email and password",
+        });
+      });
+
+      it("should force the password into select query options", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+
+        await authService.login(
+          {
+            usernameField: "username",
+            username: "testuser",
+            password: "Password123",
+          },
+          { select: { id: true } },
+        );
+
+        expect(userService.findOne).toHaveBeenCalledWith(expect.anything(), {
+          select: { id: true, password: true },
+        });
+      });
+
+      it("should remove the password from omit query options", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+
+        await authService.login(
+          {
+            usernameField: "username",
+            username: "testuser",
+            password: "Password123",
+          },
+          { omit: { password: true, email: true } },
+        );
+
+        expect(userService.findOne).toHaveBeenCalledWith(expect.anything(), {
+          omit: { email: true },
+        });
+      });
+
+      it("should keep other query options untouched", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+        const options = { include: { profile: true } };
+
+        await authService.login(
+          {
+            usernameField: "username",
+            username: "testuser",
+            password: "Password123",
+          },
+          options,
+        );
+
+        expect(userService.findOne).toHaveBeenCalledWith(expect.anything(), {
+          include: { profile: true },
+        });
+        expect(options).toEqual({ include: { profile: true } });
+      });
+    });
+
+    describe("updatePassword", () => {
+      const storedUser = {
+        id: "user-123",
+        password: "hashed",
+        isActive: true,
+      };
+
+      beforeEach(() => {
+        jest
+          .spyOn(authService, "signJwtToken")
+          .mockReturnValue("new-jwt-token");
+      });
+
+      it("should reject when currentPassword or newPassword is missing", async () => {
+        await expect(
+          authService.updatePassword("user-123", {
+            currentPassword: "CurrentPassword123",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message: "currentPassword and newPassword are required",
+        });
+        expect(userService.findOne).not.toHaveBeenCalled();
+      });
+
+      it("should reject with 404 when the user is not found", async () => {
+        userService.findOne.mockResolvedValue(null);
+
+        await expect(
+          authService.updatePassword("user-123", {
+            currentPassword: "CurrentPassword123",
+            newPassword: "NewPassword123",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 404,
+          message: "User not found!",
+        });
+      });
+
+      it("should reject with 404 when the user is inactive", async () => {
+        userService.findOne.mockResolvedValue({
+          ...storedUser,
+          isActive: false,
+        });
+
+        await expect(
+          authService.updatePassword("user-123", {
+            currentPassword: "CurrentPassword123",
+            newPassword: "NewPassword123",
+          }),
+        ).rejects.toMatchObject({ statusCode: 404 });
+      });
+
+      it("should reject with 404 when the user deleted their account", async () => {
+        userService.findOne.mockResolvedValue({
+          ...storedUser,
+          deletedSelfAccountAt: "2026-01-01T00:00:00.000Z",
+        });
+
+        await expect(
+          authService.updatePassword("user-123", {
+            currentPassword: "CurrentPassword123",
+            newPassword: "NewPassword123",
+          }),
+        ).rejects.toMatchObject({ statusCode: 404 });
+      });
+
+      it("should reject when the current password is incorrect", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(false);
+
+        await expect(
+          authService.updatePassword("user-123", {
+            currentPassword: "Wrong123",
+            newPassword: "NewPassword123",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message: "Current password is incorrect",
+        });
+        expect(userService.updateOne).not.toHaveBeenCalled();
+      });
+
+      it("should reject a weak new password using the configured message", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+
+        await expect(
+          authService.updatePassword("user-123", {
+            currentPassword: "CurrentPassword123",
+            newPassword: "weak",
+          }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message: mockConfig.authentication.passwordValidation.message,
+        });
+        expect(userService.updateOne).not.toHaveBeenCalled();
+      });
+
+      it("should reject a weak new password using the default message when none is configured", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+        delete mockConfig.authentication.passwordValidation.message;
+
+        await expect(
+          authService.updatePassword("user-123", {
+            currentPassword: "CurrentPassword123",
+            newPassword: "weak",
+          }),
+        ).rejects.toMatchObject({
+          message:
+            "The new password must contain at least one uppercase letter, one lowercase letter, and one number",
+        });
+      });
+
+      it("should skip the strength check when validation is configured", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+        jest.spyOn(authService, "hashPassword").mockResolvedValue("new-hash");
+        mockConfig.validation = { resolver: "zod" };
+
+        const result = await authService.updatePassword("user-123", {
+          currentPassword: "CurrentPassword123",
+          newPassword: "weak",
+        });
+
+        expect(result).toEqual({ accessToken: "new-jwt-token" });
+      });
+
+      it("should update the password and return a fresh access token", async () => {
+        userService.findOne.mockResolvedValue({ ...storedUser });
+        const compare = jest
+          .spyOn(authService, "isCorrectPassword")
+          .mockResolvedValue(true);
+        const hash = jest
+          .spyOn(authService, "hashPassword")
+          .mockResolvedValue("new-hash");
+
+        const result = await authService.updatePassword("user-123", {
+          currentPassword: "CurrentPassword123",
+          newPassword: "NewPassword123",
+        });
+
+        expect(userService.findOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          {},
+        );
+        expect(compare).toHaveBeenCalledWith("CurrentPassword123", "hashed");
+        expect(hash).toHaveBeenCalledWith("NewPassword123");
+        expect(userService.updateOne).toHaveBeenCalledWith(
+          { id: "user-123" },
+          {
+            password: "new-hash",
+            passwordChangedAt: expect.any(String),
+          },
+        );
+        expect(authService.signJwtToken).toHaveBeenCalledWith("user-123");
+        expect(result).toEqual({ accessToken: "new-jwt-token" });
+      });
+    });
+  });
+
+  describe("token extraction", () => {
+    beforeEach(() => {
+      jest
+        .spyOn(authService, "verifyJwtToken")
+        .mockResolvedValue({ id: "user-123", iat: 1617123456 });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: "user-123",
+        username: "testuser",
+      });
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("should return null when the request cookie is no-token", async () => {
+      mockReq = { headers: {}, cookies: { arkos_access_token: "no-token" } };
+
+      expect(await authService.getAuthenticatedUser(mockReq)).toBeNull();
+      expect(authService.verifyJwtToken).not.toHaveBeenCalled();
+    });
+
+    it("should extract the token from the socket handshake auth", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: { auth: { token: "socket-token" }, headers: {} },
+      };
+
+      const result = await authService.getAuthenticatedUser(socket);
+
+      expect(authService.verifyJwtToken).toHaveBeenCalledWith("socket-token");
+      expect(socket.accessToken).toBe("socket-token");
+      expect(result).toEqual({ id: "user-123", username: "testuser" });
+    });
+
+    it("should extract the token from the socket authorization header", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: {
+          auth: {},
+          headers: { authorization: "Bearer header-token" },
+        },
+      };
+
+      await authService.getAuthenticatedUser(socket);
+
+      expect(authService.verifyJwtToken).toHaveBeenCalledWith("header-token");
+    });
+
+    it("should return null when the context is neither a request nor a socket", async () => {
+      expect(await authService.getAuthenticatedUser({} as any)).toBeNull();
+    });
+
+    it("should authenticate a socket using only the arkos_access_token cookie", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: {
+          auth: {},
+          headers: {
+            cookie: "theme=dark; arkos_access_token=cookie-token; other=value",
+          },
+        },
+      };
+
+      const result = await authService.getAuthenticatedUser(socket);
+
+      expect(authService.verifyJwtToken).toHaveBeenCalledWith("cookie-token");
+      expect(socket.accessToken).toBe("cookie-token");
+      expect(result).toEqual({ id: "user-123", username: "testuser" });
+    });
+
+    it("should fall back to socket.request headers when handshake headers have no cookie", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: { auth: {}, headers: {} },
+        request: {
+          headers: { cookie: "arkos_access_token=request-cookie-token" },
+        },
+      };
+
+      await authService.getAuthenticatedUser(socket);
+
+      expect(authService.verifyJwtToken).toHaveBeenCalledWith(
+        "request-cookie-token",
+      );
+    });
+
+    it("should reject a socket when the cookie token is invalid", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=invalid-token" },
+        },
+      };
+
+      (authService.verifyJwtToken as jest.Mock).mockRejectedValue(
+        new AppError("Invalid token", 401, "InvalidToken"),
+      );
+
+      await expect(authService.getAuthenticatedUser(socket)).rejects.toThrow(
+        "Invalid token",
+      );
+    });
+
+    it("should return null when the socket has no token source", async () => {
+      const socket: any = {
+        join: jest.fn(),
+        handshake: { auth: {}, headers: {} },
+      };
+
+      expect(await authService.getAuthenticatedUser(socket)).toBeNull();
+      expect(authService.verifyJwtToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("extractSocketToken", () => {
+    const extract = (socket: any) =>
+      authService.extractSocketToken(socket);
+
+    it("should prefer handshake.auth.token over the authorization header and cookie", () => {
+      const socket = {
+        handshake: {
+          auth: { token: "auth-token" },
+          headers: {
+            authorization: "Bearer header-token",
+            cookie: "arkos_access_token=cookie-token",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("auth-token");
+    });
+
+    it("should use the authorization header when auth.token is absent and strip Bearer", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: {
+            authorization: "Bearer header-token",
+            cookie: "arkos_access_token=cookie-token",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("header-token");
+    });
+
+    it("should strip Bearer case-insensitively and tolerate a missing space", () => {
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "bearer lower-token" },
+          },
+        }),
+      ).toBe("lower-token");
+
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "Bearerjoined-token" },
+          },
+        }),
+      ).toBe("joined-token");
+    });
+
+    it("should use the cookie when both auth.token and the authorization header are absent", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=cookie-token" },
+        },
+      };
+
+      expect(extract(socket)).toBe("cookie-token");
+    });
+
+    it("should ignore the no-token logout sentinel", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=no-token" },
+        },
+      };
+
+      expect(extract(socket)).toBeNull();
+    });
+
+    it("should parse multiple cookies, encoded values, and values containing '='", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: {
+            cookie:
+              "theme=dark; arkos_access_token=token%2Bvalue%3D; other=some=value",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("token+value=");
+    });
+
+    it("should skip malformed cookie pairs", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: {
+            cookie:
+              "; ; broken; =missing-key; bad=%E0%A4%A; arkos_access_token=good-token",
+          },
+        },
+      };
+
+      expect(extract(socket)).toBe("good-token");
+    });
+
+    it("should use cookies parsed by the gateway when available", () => {
+      const socket = {
+        handshake: {
+          auth: {},
+          headers: { cookie: "arkos_access_token=raw-token" },
+          cookies: { arkos_access_token: "parsed-token" },
+        },
+      };
+
+      expect(extract(socket)).toBe("parsed-token");
+    });
+
+    it("should return null for empty or absent headers", () => {
+      expect(extract({ handshake: { auth: {}, headers: {} } })).toBeNull();
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "", cookie: "" },
+          },
+        }),
+      ).toBeNull();
+      expect(
+        extract({
+          handshake: {
+            auth: {},
+            headers: { authorization: "Bearer ", cookie: "other=value" },
+          },
+        }),
+      ).toBeNull();
+    });
+  });
+
+  describe("permission checker branches", () => {
+    it("should throw when authentication is not set up", async () => {
+      (isUsingAuthentication as jest.Mock).mockReturnValue(false);
+      const checker = authService.permission("View", "product", ["admin"]);
+
+      await expect(checker({ id: "user-123", role: "admin" })).rejects.toThrow(
+        "Validation Error: Trying to use authService.permission without setting up authentication.",
+      );
+    });
+
+    it("should return true for super users", async () => {
+      const checker = authService.permission("View", "product", ["admin"]);
+
+      expect(
+        await checker({ id: "user-123", role: "viewer", isSuperUser: true }),
+      ).toBe(true);
+    });
   });
 
   describe("signJwtToken", () => {
@@ -112,7 +946,7 @@ describe("AuthService", () => {
       expect(jwt.sign).toHaveBeenCalledWith(
         { id: userId },
         expect.any(String),
-        { expiresIn: expect.any(String) }
+        { expiresIn: expect.any(String) },
       );
       expect(result).toBe(mockToken);
     });
@@ -160,7 +994,7 @@ describe("AuthService", () => {
       expect(jwt.sign).not.toHaveBeenCalledWith(
         { id: userId },
         expect.any(String),
-        { expiresIn: expect.any(String) }
+        { expiresIn: expect.any(String) },
       );
       expect(result).not.toBeDefined();
       process.env = originalEnv;
@@ -171,7 +1005,7 @@ describe("AuthService", () => {
     it("should throw error when req is not provided", () => {
       // Execute & Verify
       expect(() => authService.getJwtCookieOptions(null as any)).toThrow(
-        "Missing req object in order get jwt cookie options"
+        "Missing req object in order get jwt cookie options",
       );
     });
 
@@ -391,10 +1225,10 @@ describe("AuthService", () => {
       const oneHourInMs = 60 * 60 * 1000;
 
       expect(result.expires?.getTime()).toBeGreaterThanOrEqual(
-        beforeTime + oneHourInMs
+        beforeTime + oneHourInMs,
       );
       expect(result.expires?.getTime()).toBeLessThanOrEqual(
-        afterTime + oneHourInMs + 100
+        afterTime + oneHourInMs + 100,
       );
     });
 
@@ -448,13 +1282,13 @@ describe("AuthService", () => {
       // Execute
       const result = await authService.isCorrectPassword(
         candidatePassword,
-        userPassword
+        userPassword,
       );
 
       // Verify
       expect(bcrypt.compare).toHaveBeenCalledWith(
         candidatePassword,
-        userPassword
+        userPassword,
       );
       expect(result).toBe(true);
     });
@@ -468,13 +1302,13 @@ describe("AuthService", () => {
       // Execute
       const result = await authService.isCorrectPassword(
         candidatePassword,
-        userPassword
+        userPassword,
       );
 
       // Verify
       expect(bcrypt.compare).toHaveBeenCalledWith(
         candidatePassword,
-        userPassword
+        userPassword,
       );
       expect(result).toBe(false);
     });
@@ -597,7 +1431,7 @@ describe("AuthService", () => {
       expect(jwt.verify).toHaveBeenCalledWith(
         token,
         expect.any(String),
-        expect.any(Function)
+        expect.any(Function),
       );
       expect(result).toEqual(decodedPayload);
     });
@@ -616,12 +1450,12 @@ describe("AuthService", () => {
       await expect(authService.verifyJwtToken(token)).rejects.toThrow(
         expect.objectContaining({
           message: "Your auth token is invalid, please login again.",
-        })
+        }),
       );
       expect(jwt.verify).toHaveBeenCalledWith(
         token,
         expect.any(String),
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 
@@ -643,7 +1477,7 @@ describe("AuthService", () => {
       expect(jwt.verify).toHaveBeenCalledWith(
         token,
         customSecret,
-        expect.any(Function)
+        expect.any(Function),
       );
     });
   });
@@ -747,7 +1581,7 @@ describe("AuthService", () => {
 
       // Execute and Verify
       await expect(
-        authService.getAuthenticatedUser(mockReq)
+        authService.getAuthenticatedUser(mockReq),
       ).rejects.toBeInstanceOf(AppError);
     });
 
@@ -758,7 +1592,7 @@ describe("AuthService", () => {
 
       // Execute and Verify
       await expect(
-        authService.getAuthenticatedUser(mockReq)
+        authService.getAuthenticatedUser(mockReq),
       ).rejects.toBeInstanceOf(AppError);
     });
 
@@ -772,7 +1606,7 @@ describe("AuthService", () => {
 
       // Execute and Verify
       await expect(
-        authService.getAuthenticatedUser(mockReq)
+        authService.getAuthenticatedUser(mockReq),
       ).rejects.toBeInstanceOf(AppError);
     });
 
@@ -798,7 +1632,7 @@ describe("AuthService", () => {
 
       // Execute and Verify
       await expect(
-        authService.getAuthenticatedUser(mockReq)
+        authService.getAuthenticatedUser(mockReq),
       ).rejects.toBeInstanceOf(AppError);
     });
 
@@ -851,7 +1685,7 @@ describe("AuthService", () => {
 
       expect(authService.getAuthenticatedUser).toHaveBeenCalledWith(
         mockReq,
-        "default"
+        "default",
       );
       expect(mockReq.user).toEqual(mockUser);
       expect(mockNext).toHaveBeenCalledWith();
@@ -1120,7 +1954,7 @@ describe("AuthService", () => {
         await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(before).toHaveBeenCalledTimes(1);
@@ -1141,7 +1975,7 @@ describe("AuthService", () => {
         await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(mockNext).toHaveBeenCalledWith(err);
@@ -1161,7 +1995,7 @@ describe("AuthService", () => {
 
         const checkStatic = jest.spyOn(
           authService as any,
-          "checkStaticAccessControl"
+          "checkStaticAccessControl",
         );
 
         const req = {
@@ -1172,7 +2006,7 @@ describe("AuthService", () => {
         await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(checkStatic).not.toHaveBeenCalled();
@@ -1202,11 +2036,11 @@ describe("AuthService", () => {
         await authService.authorize("Delete", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ statusCode: 403 })
+          expect.objectContaining({ statusCode: 403 }),
         );
       });
 
@@ -1231,7 +2065,7 @@ describe("AuthService", () => {
         await authService.authorize("Delete", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(mockNext).toHaveBeenCalledWith(replacedErr);
@@ -1256,7 +2090,7 @@ describe("AuthService", () => {
         await authService.authorize("Delete", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(after).toHaveBeenCalledTimes(1);
@@ -1276,11 +2110,11 @@ describe("AuthService", () => {
         await authService.authorize("Delete", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ statusCode: 403 })
+          expect.objectContaining({ statusCode: 403 }),
         );
       });
     });
@@ -1297,7 +2131,7 @@ describe("AuthService", () => {
         await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(after).toHaveBeenCalledTimes(1);
@@ -1318,7 +2152,7 @@ describe("AuthService", () => {
         await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
-          mockNext
+          mockNext,
         );
 
         expect(mockNext).toHaveBeenCalledWith(err);
@@ -1372,13 +2206,13 @@ describe("AuthService", () => {
         const middleware = authService.authorize(
           "Delete",
           "product",
-          detailedRule
+          detailedRule,
         );
 
         expect(authorizeSpy).toHaveBeenCalledWith(
           "Delete",
           "product",
-          detailedRule
+          detailedRule,
         );
 
         await middleware(mockReq, mockRes, mockNext);
@@ -1454,7 +2288,7 @@ describe("AuthService", () => {
 
         await middleware(mockReq, mockRes, mockNext);
         expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({ statusCode: 403 })
+          expect.objectContaining({ statusCode: 403 }),
         );
 
         authorizeSpy.mockRestore();
@@ -1474,7 +2308,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1491,25 +2325,25 @@ describe("AuthService", () => {
       const result1 = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       const result2 = (authService as any).checkStaticAccessControl(
         user,
         action,
-        { create: "*" }
+        { create: "*" },
       );
 
       const result3 = (authService as any).checkStaticAccessControl(
         user,
         action,
-        "*"
+        "*",
       );
 
       const result4 = (authService as any).checkStaticAccessControl(
         user,
         action,
-        { create: { roles: ["*"] } }
+        { create: { roles: ["*"] } },
       );
 
       // Verify
@@ -1535,7 +2369,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1556,7 +2390,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1573,7 +2407,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1590,7 +2424,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1607,7 +2441,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1624,7 +2458,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1659,7 +2493,7 @@ describe("AuthService", () => {
       const result = (authService as any).checkStaticAccessControl(
         user,
         action,
-        accessControl
+        accessControl,
       );
 
       // Verify
@@ -1680,7 +2514,7 @@ describe("AuthService", () => {
       const result = await (authService as any).checkDynamicAccessControl(
         userId,
         action,
-        resource
+        resource,
       );
 
       // Verify
@@ -1713,7 +2547,7 @@ describe("AuthService", () => {
       const result = await (authService as any).checkDynamicAccessControl(
         userId,
         action,
-        resource
+        resource,
       );
 
       // Verify
@@ -1745,7 +2579,7 @@ describe("AuthService", () => {
       const result = await (authService as any).checkDynamicAccessControl(
         userId,
         action,
-        resource
+        resource,
       );
 
       expect(result).toBe(false);
@@ -1764,7 +2598,7 @@ describe("AuthService", () => {
       const result = await (authService as any).checkDynamicAccessControl(
         userId,
         action,
-        resource
+        resource,
       );
 
       expect(result).toBe(true);
@@ -1781,7 +2615,7 @@ describe("AuthService", () => {
       const result = await (authService as any).checkDynamicAccessControl(
         userId,
         action,
-        resource
+        resource,
       );
 
       expect(result).toBe(true);
@@ -1795,14 +2629,14 @@ describe("AuthService", () => {
       // Simulate an older project's Prisma client: no userPermission delegate at all.
       const { userPermission, ...prismaWithoutUserPermission } = mockPrisma;
       (getPrismaInstance as jest.Mock).mockReturnValueOnce(
-        prismaWithoutUserPermission
+        prismaWithoutUserPermission,
       );
       mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
 
       const result = await (authService as any).checkDynamicAccessControl(
         userId,
         action,
-        resource
+        resource,
       );
 
       expect(result).toBe(true);
@@ -1821,7 +2655,7 @@ describe("AuthService", () => {
       });
       try {
         expect(authService.permission("create", "User")).rejects.toThrow(
-          expect.any(Error)
+          expect.any(Error),
         );
       } catch { }
     });
@@ -1855,7 +2689,7 @@ describe("AuthService", () => {
       const permissionChecker = authService.permission("create", "User");
 
       await expect(permissionChecker(undefined)).rejects.toBeInstanceOf(
-        AppError
+        AppError,
       );
     });
 
@@ -1883,7 +2717,7 @@ describe("AuthService", () => {
 
       // Verify
       expect(
-        (authService as any).checkDynamicAccessControl
+        (authService as any).checkDynamicAccessControl,
       ).toHaveBeenCalledWith("user-123", "create", "User");
       expect(result).toBe(true);
     });
@@ -1895,7 +2729,7 @@ describe("AuthService", () => {
       const permissionChecker = authService.permission(
         "create",
         "User",
-        accessControl
+        accessControl,
       );
       const user = { id: "user-123", role: "admin" };
 
@@ -1909,7 +2743,7 @@ describe("AuthService", () => {
 
       // Verify
       expect(
-        (authService as any).checkStaticAccessControl
+        (authService as any).checkStaticAccessControl,
       ).toHaveBeenCalledWith(user, "create", accessControl);
       expect(result).toBe(true);
     });
@@ -1941,3 +2775,4 @@ describe("AuthService", () => {
     });
   });
 });
+

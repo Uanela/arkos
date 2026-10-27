@@ -302,6 +302,17 @@ Response:
 
 All list endpoints (`GET /api/[model]`) support a rich set of query parameters that translate directly into Prisma queries.
 
+<Callout type="warn">
+  **Your model's default `where` clause is always applied.** If a model has a
+  `[model].query.ts` file with a `where` clause — for example
+  `global: { where: { published: true } }` — that filter is combined with every
+  request, including requests that pass their own filters. So
+  `GET /api/posts?authorId=123` also only returns posts where `published: true`,
+  which can be fewer records than you expect. See
+  [Custom Queries](/docs/core-concepts/prisma-orm/custom-queries) for how to
+  change or remove it.
+</Callout>
+
 Arkos supports two interchangeable syntaxes — use whichever feels natural, or mix them in the same request:
 
 - **Bracket notation:** `price[gte]=50&price[lt]=100`

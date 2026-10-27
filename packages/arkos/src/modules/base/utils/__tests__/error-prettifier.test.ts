@@ -476,6 +476,144 @@ describe("ErrorPrettifier", () => {
       });
     });
 
+    describe("Zod v4 invalid_format", () => {
+      it("should map the email format to an email constraint", () => {
+        const zodError = new ZodError([
+          {
+            code: "invalid_format",
+            format: "email",
+            origin: "string",
+            path: ["email"],
+            message: "Invalid email address",
+          } as any,
+        ]);
+
+        const result = prettifier.prettify("zod", zodError);
+
+        expect(result).toEqual([
+          {
+            message: "'email' must be a valid email address",
+            code: "EmailIsEmailConstraint",
+          },
+        ]);
+      });
+
+      it("should map the uuid format to a uuid constraint", () => {
+        const zodError = new ZodError([
+          {
+            code: "invalid_format",
+            format: "uuid",
+            origin: "string",
+            path: ["id"],
+            message: "Invalid UUID",
+          } as any,
+        ]);
+
+        const result = prettifier.prettify("zod", zodError);
+
+        expect(result).toEqual([
+          {
+            message: "'id' must be a valid UUID",
+            code: "IdIsUuidConstraint",
+          },
+        ]);
+      });
+
+      it("should map the url format to a url constraint", () => {
+        const zodError = new ZodError([
+          {
+            code: "invalid_format",
+            format: "url",
+            origin: "string",
+            path: ["website"],
+            message: "Invalid URL",
+          } as any,
+        ]);
+
+        const result = prettifier.prettify("zod", zodError);
+
+        expect(result).toEqual([
+          {
+            message: "'website' must be a valid URL",
+            code: "WebsiteIsUrlConstraint",
+          },
+        ]);
+      });
+
+      it("should map regex and string-affix formats", () => {
+        const zodError = new ZodError([
+          {
+            code: "invalid_format",
+            format: "regex",
+            origin: "string",
+            path: ["code"],
+            message: "Invalid string",
+          } as any,
+          {
+            code: "invalid_format",
+            format: "starts_with",
+            origin: "string",
+            path: ["prefix"],
+            message: "Invalid string",
+          } as any,
+          {
+            code: "invalid_format",
+            format: "ends_with",
+            origin: "string",
+            path: ["suffix"],
+            message: "Invalid string",
+          } as any,
+          {
+            code: "invalid_format",
+            format: "includes",
+            origin: "string",
+            path: ["needle"],
+            message: "Invalid string",
+          } as any,
+        ]);
+
+        const result = prettifier.prettify("zod", zodError);
+
+        expect(result).toContainEqual({
+          message: "'code' must be a valid string",
+          code: "CodeMatchesConstraint",
+        });
+        expect(result).toContainEqual({
+          message: "'prefix' must be a valid string",
+          code: "PrefixStartsWithConstraint",
+        });
+        expect(result).toContainEqual({
+          message: "'suffix' must be a valid string",
+          code: "SuffixEndsWithConstraint",
+        });
+        expect(result).toContainEqual({
+          message: "'needle' must be a valid string",
+          code: "NeedleContainsConstraint",
+        });
+      });
+
+      it("should fall back to InvalidFormatConstraint for unknown formats", () => {
+        const zodError = new ZodError([
+          {
+            code: "invalid_format",
+            format: "something-unknown",
+            origin: "string",
+            path: ["field"],
+            message: "Invalid format",
+          } as any,
+        ]);
+
+        const result = prettifier.prettify("zod", zodError);
+
+        expect(result).toEqual([
+          {
+            message: "'field' must be a valid format",
+            code: "FieldInvalidFormatConstraint",
+          },
+        ]);
+      });
+    });
+
     describe("Nested field errors", () => {
       it("should prettify one-level nested errors", () => {
         const zodError = new ZodError([

@@ -15,12 +15,17 @@ import {
 import { getArkosConfig } from "../../server";
 import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
 import AppError from "../error-handler/utils/app-error";
+import { DEFAULT_UPLOAD_DIRS } from "./utils/helpers/upload-path.helper";
+import { uploadServingRegistry } from "./utils/helpers/upload-serving.registry";
 
 export function getFileUploadRouter() {
   const router = ArkosRouter();
   const { fileUpload, globalPrefix } = getArkosConfig();
 
-  if (!fileUpload?.enabled === false) return router;
+  if (fileUpload?.enabled === false) {
+    uploadServingRegistry.setFindFileServingEnabled(false);
+    return router;
+  }
 
   const routeHook = loadableRegistry.getItem("ArkosRouteHook", "file-upload");
 
@@ -58,6 +63,8 @@ export function getFileUploadRouter() {
   // FIND FILE
   {
     const { before, onError, routeConfig } = op("findFile");
+    const servingMode = fileUpload?.serving || "all";
+    uploadServingRegistry.setFindFileServingEnabled(!routeConfig?.disabled);
     const baseUploadDirFullPath = path.resolve(
       path
         .join(process.cwd(), fileUpload?.baseUploadDir || "uploads")
@@ -67,10 +74,34 @@ export function getFileUploadRouter() {
       {
         authentication: { action: "View", resource: "file-upload" },
         ...routeConfig,
-        path: `${basePathname}*slug`,
+        path:
+          servingMode === "registered"
+            ? `${basePathname}:fileType/*slug`
+            : `${basePathname}*slug`,
       },
       ...processMiddleware(before),
       adjustRequestUrl,
+      ...(servingMode === "registered"
+        ? [
+            (req: ArkosRequest, _res: ArkosResponse, next: ArkosNextFunction) => {
+              if (
+                !(DEFAULT_UPLOAD_DIRS as readonly string[]).includes(
+                  req.params.fileType
+                )
+              )
+                return next(
+                  new AppError(
+                    `File ${req.path} was not found`,
+                    404,
+                    "FileNotFound",
+                    { filepath: req.path }
+                  )
+                );
+
+              next();
+            },
+          ]
+        : []),
       express.static(
         baseUploadDirFullPath,
         deepmerge(
@@ -135,7 +166,7 @@ export function getFileUploadRouter() {
       {
         authentication: { action: "Update", resource: "file-upload" },
         ...routeConfig,
-        path: `${basePathname}:fileType/:fileName`,
+        path: `${basePathname}:fileType/*fileName`,
       },
       ...processMiddleware(before),
       fileUploadController.updateFile,
@@ -152,7 +183,7 @@ export function getFileUploadRouter() {
       {
         authentication: { action: "Delete", resource: "file-upload" },
         ...routeConfig,
-        path: `${basePathname}:fileType/:fileName`,
+        path: `${basePathname}:fileType/*fileName`,
       },
       ...processMiddleware(before),
       fileUploadController.deleteFile,

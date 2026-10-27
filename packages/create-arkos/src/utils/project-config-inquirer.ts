@@ -220,7 +220,6 @@ class ProjectConfigInquirer {
         type: validationType as 'zod' | 'class-validator',
       };
     }
-    // validation stays undefined when "none" is chosen — matches original behaviour
   }
 
   private async promptAuthentication() {
