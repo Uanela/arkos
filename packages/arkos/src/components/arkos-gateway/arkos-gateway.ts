@@ -67,7 +67,8 @@ export class IArkosGateway {
 
   /**
    * Register a Socket.io connection-level middleware — runs before a socket
-   * is accepted into this gateway's namespace, and before authentication.
+   * is accepted into this gateway's namespace, and after authentication
+   * (so `socket.currentUser` is available).
    * Also accepts a child `ArkosGateway` which will inherit this gateway's
    * name as prefix along with its auth, rateLimit, and pipes.
    *
@@ -295,10 +296,6 @@ export class IArkosGateway {
       .filter((h) => h.type === "error")
       .map((h) => h.handler as ArkosGatewayErrorHandler);
 
-    for (const middleware of resolvedMiddlewares) {
-      ns.use((socket, next) => middleware(socket as ArkosSocket, next));
-    }
-
     if (resolvedAuth && isAuthenticationEnabled()) {
       ns.use(async (socket: any, next) => {
         socket = socket as ArkosSocket;
@@ -337,6 +334,10 @@ export class IArkosGateway {
 
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
       );
+
+    for (const middleware of resolvedMiddlewares) {
+      ns.use((socket, next) => middleware(socket as ArkosSocket, next));
+    }
 
     ns.on("connection", async (s) => {
       const socket = s as ArkosSocket;

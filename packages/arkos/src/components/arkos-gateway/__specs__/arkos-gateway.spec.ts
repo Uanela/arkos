@@ -529,7 +529,7 @@ describe("IArkosGateway", () => {
         expect(mockNs.use).toHaveBeenCalledTimes(1);
       });
 
-      it("should register middlewares before the authentication middleware", () => {
+      it("should register middlewares after the authentication middleware", () => {
         const { mockIo, mockNs } = createMockIo();
         const gateway = new IArkosGateway({
           name: "/chat",
@@ -544,7 +544,7 @@ describe("IArkosGateway", () => {
 
         const socket = createMockSocket();
         const next = jest.fn();
-        mockNs.use.mock.calls[0][0](socket, next);
+        mockNs.use.mock.calls[1][0](socket, next);
 
         expect(middleware).toHaveBeenCalledWith(socket, next);
       });
@@ -567,9 +567,9 @@ describe("IArkosGateway", () => {
 
         (parentGateway as any)._register(mockIo, undefined, [], [], {});
 
-        // parent middleware, child middleware, then child auth middleware
+        // child auth middleware, then parent middleware, then child middleware
         expect(childNs.use).toHaveBeenCalledTimes(3);
-        const [parentWrapper, childWrapper] = childNs.use.mock.calls.map(
+        const [, parentWrapper, childWrapper] = childNs.use.mock.calls.map(
           (call: any[]) => call[0]
         );
         const socket = createMockSocket();

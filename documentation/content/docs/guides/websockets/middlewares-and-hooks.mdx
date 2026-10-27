@@ -6,7 +6,7 @@ Arkos Gateways give you three distinct extension points, and it's easy to reach 
 
 | API       | Runs when                                                                | Scope                         |
 | --------- | ------------------------------------------------------------------------ | ----------------------------- |
-| `.use()`  | On connection, before a socket is accepted — or composes a child Gateway | Connection-level              |
+| `.use()`  | On connection, after authentication — or composes a child Gateway       | Connection-level              |
 | `.pipe()` | Before an event handler runs                                             | Event-level, global or scoped |
 | `.hook()` | On `connection`, `disconnect`, or `error`                                | Lifecycle-level               |
 
@@ -52,7 +52,7 @@ chatGateway.pipe({ event: "future_event" }, myPipe); // fine, registered first
 chatGateway.on({ event: "future_event" }, handler); // myPipe still runs
 ```
 
-`.pipe()` is per-Gateway — a child Gateway does not automatically inherit its parent's pipes. If you need shared logic across a parent and its children, put it in a `.use()` connection middleware instead, which does apply before namespace-level auth on every socket in that branch.
+`.pipe()` is per-Gateway — a child Gateway does not automatically inherit its parent's pipes. If you need shared logic across a parent and its children, put it in a `.use()` connection middleware instead, which does apply on every socket in that branch, after namespace-level auth.
 
 ## `.hook()` — lifecycle hooks
 
