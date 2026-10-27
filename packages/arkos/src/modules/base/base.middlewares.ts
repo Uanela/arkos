@@ -26,8 +26,6 @@ import { lenientDecode } from "../../utils/helpers/url-helpers";
 import { pascalCase } from "../../exports/utils";
 import validationManager from "../../types/validation/validation-manager";
 import { ZodType } from "zod";
-import { isZodSchema } from "../../utils/dynamic-loader";
-import ExitError from "../../utils/helpers/exit-error";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -286,13 +284,13 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
     !validationConfig?.resolver &&
     Object.keys(routeConfig.validation || {}).length > 0
   )
-    throw ExitError(
-      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`,
+    throw Error(
+      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`
     );
 
   if ((validators as any) === true)
-    throw ExitError(
-      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`,
+    throw Error(
+      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
     );
 
   const validatorsKey: ("body" | "query" | "params")[] = [
@@ -315,7 +313,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         ) &&
         validators?.[key]
       ) {
-        throw ExitError(
+        throw Error(
           `Error in ${routeConfig.path}: when usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.
 
 Read more about strict validation at https://www.arkosjs.com/docs/guides/validation/setup#strict-mode.
@@ -330,8 +328,8 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         validators?.[key] &&
         key === "body"
       ) {
-        throw ExitError(
-          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`,
+        throw Error(
+          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
         );
       }
 
@@ -339,8 +337,8 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         validators?.[key] &&
         !validationManager.isValidator(validators?.[key])
       )
-        throw ExitError(
-          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`,
+        throw Error(
+          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`
         );
     });
 
