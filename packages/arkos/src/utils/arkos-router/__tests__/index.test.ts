@@ -8,9 +8,7 @@ jest.mock("../", () => ({
 }));
 jest.mock("../../helpers/exit-error", () => ({
   __esModule: true,
-  default: jest.fn((message: string) => {
-    throw new Error(message);
-  }),
+  default: jest.fn(),
 }));
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),

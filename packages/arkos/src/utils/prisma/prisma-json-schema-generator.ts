@@ -5,7 +5,6 @@ import {
   JsonSchema,
   JsonSchemaProperty,
 } from "./types";
-import ExitError from "../helpers/exit-error";
 
 /**
  * Enhanced JSON Schema generator that creates schemas based on Prisma models and query options
@@ -156,7 +155,7 @@ export class PrismaJsonSchemaGenerator {
     const includeRelations = options?.include;
 
     if (selectFields && includeRelations) {
-      throw ExitError(
+      throw new Error(
         `Found both 'select' and 'include' in ${model.name} query options. Please use one of them.`
       );
     }
@@ -228,7 +227,7 @@ export class PrismaJsonSchemaGenerator {
     const ommittedFields = includeOptions?.omit;
 
     if (selectFields && nestedIncludes) {
-      throw ExitError(
+      throw new Error(
         `Found both 'select' and 'include' in nested ${model.name} query options. Please use one of them.`
       );
     }

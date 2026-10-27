@@ -20,12 +20,6 @@ import validateSchema from "../../../utils/validate-schema";
 jest.mock("../../error-handler/utils/catch-async");
 jest.mock("../../../utils/validate-dto");
 jest.mock("../../../utils/validate-schema");
-jest.mock("../../../utils/helpers/exit-error", () => ({
-  __esModule: true,
-  default: jest.fn((message: string) => {
-    throw new Error(message);
-  }),
-}));
 
 // Mock the config helper
 jest.mock("../../../server", () => ({

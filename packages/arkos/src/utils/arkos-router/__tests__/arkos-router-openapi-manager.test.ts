@@ -1,13 +1,6 @@
 import arkosRouterOpenApiManager from "../arkos-router-openapi-manager";
 import { UploadConfig } from "../types/upload-config";
 
-jest.mock("../../helpers/exit-error", () => ({
-  __esModule: true,
-  default: jest.fn((message: string) => {
-    throw new Error(message);
-  }),
-}));
-
 describe("arkosRouterOpenApiManager", () => {
   describe("ArkosRouterOpenAPIManager - addUploadFields", () => {
     describe("Single file upload", () => {
