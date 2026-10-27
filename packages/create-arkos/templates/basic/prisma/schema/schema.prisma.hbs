@@ -1,9 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
 }
 
 datasource db {
-  provider = "{{prisma.provider}}"
-  url      = env("DATABASE_URL")
+  provider = "{{prisma.provider}}"{{#if (eq prisma.provider "mongodb")}}
+  url      = env("DATABASE_URL"){{/if}}
 }
 

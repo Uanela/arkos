@@ -28,7 +28,7 @@ reportsRouter.post(
       uploads: {
         type: "single",
         field: "reportFile",
-        uploadDir: "reports",
+        uploadDir: "/reports",
         deleteOnError: true,
       },
     },
@@ -47,7 +47,7 @@ export const hook: RouteHook = {
       uploads: {
         type: "single",
         field: "profilePhoto",
-        uploadDir: "user-profiles",
+        uploadDir: "/user-profiles",
         deleteOnError: true,
       },
     },
@@ -75,11 +75,13 @@ All fields are optional and deep-merged with defaults.
 |-----|------|-------------|---------|
 | `baseUploadDir` | `string` | Root-relative path where files are saved | `/uploads` |
 | `baseRoute` | `string` | Base route for standalone upload endpoints | `/api/uploads` |
+| `serving` | `"all" \| "registered"` | Which upload folders are served by `findFile` (v1.8.0-rc+) | `"all"` |
 | `expressStatic` | `object` | Options passed to `express.static()` — deep-merged with defaults | See below |
 | `restrictions.images` | `object` | `maxCount`, `maxSize`, `supportedFilesRegex` for images | - |
 | `restrictions.videos` | `object` | Same shape, for videos | — |
 | `restrictions.documents` | `object` | Same shape, for documents | — |
 | `restrictions.files` | `object` | Same shape, for all other types | — |
+| `warnings.fileUpload.suppressUnusedUrlParams` | `boolean` | Suppress startup warnings for unused URL params (v1.8.0-rc+) | `false` |
 
 `expressStatic` defaults:
 
@@ -89,7 +91,7 @@ All fields are optional and deep-merged with defaults.
   etag: true,
   lastModified: true,
   dotfiles: "ignore",
-  fallthrough: true,
+  fallthrough: false,
   index: false,
   cacheControl: true,
 }
@@ -97,6 +99,10 @@ All fields are optional and deep-merged with defaults.
 
 <Callout type="info">
   `baseRoute` and `baseUploadDir` are independent — changing one does not affect the other.
+</Callout>
+
+<Callout type="info" title="Serving upload directories">
+  Starting with v1.8.0-rc, `serving: "registered"` limits the built-in GET endpoint to the `images`, `videos`, `documents`, and `files` roots. Any other folder must be registered with `arkos.serveUploadDir()` or explicitly marked `serve: false`. See [File Level Access Control](/docs/core-concepts/authentication/advanced/file-level-access-control).
 </Callout>
 
 <Tabs items={["v1.6+ (defineConfig)", "v1.4–v1.5", "v1.3"]}>
@@ -108,6 +114,7 @@ export default defineConfig({
   fileUpload: {
     baseUploadDir: "/uploads",
     baseRoute: "/api/uploads",
+    serving: "registered",
     expressStatic: {
       maxAge: "1d",
     },

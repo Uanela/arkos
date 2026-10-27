@@ -133,6 +133,10 @@ export function getMiddlewareStack(
 
   if (config.experimental?.uploads) {
     const uploadConfig = config.experimental.uploads;
+    uploadManager.registerUploadConfig(
+      uploadConfig,
+      String((config as any).path ?? "")
+    );
     middlewares.push(uploadManager.handleUpload(uploadConfig));
     middlewares.push(uploadManager.validateRequiredFiles(uploadConfig));
 

@@ -1,4 +1,5 @@
 import { ArkosRouteConfig } from "../exports";
+import { AuthService, BaseService } from "../exports/services";
 
 export type RouterEndpoint =
   | "createOne"
@@ -22,12 +23,15 @@ export type AuthRouterEndpoint =
   | "findOneAuthAction";
 
 export type FileUploadRouterEndpoint =
-  | "findFile"
-  | "uploadFile"
-  | "updateFile"
-  | "deleteFile";
+  "findFile" | "uploadFile" | "updateFile" | "deleteFile";
 
-type BaseRouterConfig = {
+export type BaseRouteHook = {
+  /**
+   *
+   *
+   * @since 1.8.0-canary.1
+   */
+  service?: BaseService<any>;
   /**
    * Backward compatibility (prior 1.4.0-beta) - disables/enables endpoints
    *
@@ -51,6 +55,10 @@ type BaseRouterConfig = {
 };
 
 type AuthRouterConfig = {
+  /**
+   * Custom override AuthService methods
+   */
+  service?: AuthService;
   /**
    * Backward compatibility (prior 1.4.0-beta) - disables/enables endpoints
    *
@@ -103,7 +111,7 @@ export type RouterConfig<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
   : T extends "file-upload"
     ? FileUploadRouterConfig
-    : BaseRouterConfig;
+    : BaseRouteHook;
 
 /**
  * Represents a Route Hook configuration for Arkos auto-generated routes.
@@ -115,7 +123,7 @@ export type RouterConfig<T extends string = string> = T extends "auth"
  * @template T - The hook type:
  * - `"auth"` → Uses {@link AuthRouterConfig} for authentication routes
  * - `"file-upload"` → Uses {@link FileUploadRouterConfig} for file upload routes
- * - `string` (default) → Uses {@link BaseRouterConfig} for standard model routes
+ * - `string` (default) → Uses {@link BaseRouteHook} for standard model routes
  *
  * @example
  * ```ts
@@ -153,4 +161,5 @@ export type RouteHook<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
   : T extends "file-upload"
     ? FileUploadRouterConfig
-    : BaseRouterConfig;
+    : BaseRouteHook;
+
