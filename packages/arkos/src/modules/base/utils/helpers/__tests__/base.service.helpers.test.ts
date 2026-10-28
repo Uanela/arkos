@@ -26,6 +26,9 @@ jest
     if (modelName === "User") {
       return [{ name: "email" }, { name: "username" }];
     }
+    if (modelName === "Post") {
+      return [{ name: "number" }];
+    }
     return [];
   });
 
@@ -1594,6 +1597,267 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
               },
             },
           ],
+        },
+      });
+    });
+  });
+
+  describe("connectOrCreate support", () => {
+    it("should handle connectOrCreate for singular relation with unique field", () => {
+      const body = {
+        name: "John Doe",
+        category: {
+          name: "Technology",
+          description: "Tech category",
+          apiAction: "connectOrCreate",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [{ name: "category", type: "Category" }],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "John Doe",
+        category: {
+          connectOrCreate: {
+            where: { name: "Technology" },
+            create: {
+              name: "Technology",
+              description: "Tech category",
+            },
+          },
+        },
+      });
+    });
+
+    it("should handle connectOrCreate for list relation with unique fields", () => {
+      const body = {
+        title: "My Post",
+        tags: [
+          {
+            name: "JavaScript",
+            description: "JS programming language",
+            apiAction: "connectOrCreate",
+          },
+          {
+            name: "TypeScript",
+            description: "TS programming language",
+            apiAction: "connectOrCreate",
+          },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: {
+          connectOrCreate: [
+            {
+              where: { name: "JavaScript" },
+              create: {
+                name: "JavaScript",
+                description: "JS programming language",
+              },
+            },
+            {
+              where: { name: "TypeScript" },
+              create: {
+                name: "TypeScript",
+                description: "TS programming language",
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it("should handle connectOrCreate with multiple unique fields", () => {
+      const body = {
+        title: "My Post",
+        tags: [
+          {
+            name: "JavaScript",
+            number: 1,
+            description: "JS programming language",
+            apiAction: "connectOrCreate",
+          },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: {
+          connectOrCreate: [
+            {
+              where: { name: "JavaScript", number: 1 },
+              create: {
+                name: "JavaScript",
+                number: 1,
+                description: "JS programming language",
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it("should handle connectOrCreate with nested relations", () => {
+      const body = {
+        name: "John Doe",
+        posts: [
+          {
+            number: "POST-001",
+            title: "My First Post",
+            content: "Some content",
+            category: {
+              name: "Technology",
+            },
+            apiAction: "connectOrCreate",
+          },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "posts", type: "Post" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "John Doe",
+        posts: {
+          connectOrCreate: [
+            {
+              where: { number: "POST-001" },
+              create: {
+                number: "POST-001",
+                title: "My First Post",
+                content: "Some content",
+                category: {
+                  connect: { name: "Technology" },
+                },
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it("should throw error when connectOrCreate has no unique fields", () => {
+      const body = {
+        name: "John Doe",
+        profile: {
+          bio: "Software Engineer",
+          avatarUrl: "https://example.com/avatar.jpg",
+          apiAction: "connectOrCreate",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [{ name: "profile", type: "Profile" }],
+        list: [],
+      };
+
+      expect(() => {
+        handleRelationFieldsInBody(body, relationFields);
+      }).toThrow(
+        "connectOrCreate requires at least one unique field to be used in the where clause"
+      );
+    });
+
+    it("should handle mixed operations including connectOrCreate", () => {
+      const body = {
+        title: "My Post",
+        tags: [
+          { name: "New Tag", description: "Brand new" },
+          { id: "1" },
+          {
+            name: "JavaScript",
+            description: "JS lang",
+            apiAction: "connectOrCreate",
+          },
+          { id: "2", name: "Updated Tag", apiAction: "update" },
+          { id: "3", apiAction: "delete" },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: {
+          create: [{ name: "New Tag", description: "Brand new" }],
+          connect: [{ id: "1" }],
+          connectOrCreate: [
+            {
+              where: { name: "JavaScript" },
+              create: {
+                name: "JavaScript",
+                description: "JS lang",
+              },
+            },
+          ],
+          update: [
+            {
+              where: { id: "2" },
+              data: { name: "Updated Tag" },
+            },
+          ],
+          deleteMany: { id: { in: ["3"] } },
+        },
+      });
+    });
+
+    it("should handle connectOrCreate for singular relation with id as unique field", () => {
+      const body = {
+        name: "John Doe",
+        profile: {
+          id: "profile-123",
+          bio: "Software Engineer",
+          apiAction: "connectOrCreate",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [{ name: "profile", type: "Profile" }],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "John Doe",
+        profile: {
+          connectOrCreate: {
+            where: { id: "profile-123" },
+            create: {
+              id: "profile-123",
+              bio: "Software Engineer",
+            },
+          },
         },
       });
     });

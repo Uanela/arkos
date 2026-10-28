@@ -69,6 +69,22 @@ type ExtractCreateTypeArray<T> =
   })[]
   : never
   : never;
+type ExtractConnectOrCreateTypeArray<T> =
+  Exclude<T, undefined> extends {
+    connectOrCreate?: infer C;
+  }
+  ? Extract<C, Array<any>> extends Array<infer U>
+  ? U extends {
+    where: infer W;
+    create: infer D;
+  }
+  ? ((W & D) & {
+    apiAction?: "connectOrCreate";
+  })[]
+  : never
+  : never
+  : never;
+
 type ExtractConnectTypeArray<
   T,
   A extends
@@ -127,6 +143,22 @@ type ExtractCreateTypeObject<T> =
   : never
   : never
   : never;
+type ExtractConnectOrCreateTypeObject<T> =
+  Exclude<T, undefined> extends {
+    connectOrCreate?: infer C;
+  }
+  ? C extends {
+    where: infer W;
+    create: infer D;
+  }
+  ? (W & D) & {
+    apiAction?: "connectOrCreate";
+  }
+  : Exclude<Extract<C, object>, Array<any>> & {
+    apiAction?: "connectOrCreate";
+  }
+  : never;
+
 type ExtractConnectTypeObject<
   T,
   A extends "connect" | "delete" | "update" | "disconnect",
@@ -167,6 +199,9 @@ type FlattenArrayRelation<T> =
   | (ExtractConnectTypeArray<T, "connect"> extends never
     ? never
     : FlattenRelations<ExtractConnectTypeArray<T, "connect">>)
+  | (ExtractConnectOrCreateTypeArray<T> extends never
+    ? never
+    : FlattenRelations<ExtractConnectOrCreateTypeArray<T>>)
   | (ExtractUpdateTypeArray<T> extends never
     ? never
     : FlattenRelations<ExtractUpdateTypeArray<T>>)
@@ -213,6 +248,9 @@ type FlattenObjectRelation<T> =
   | (ExtractConnectTypeObject<T, "connect"> extends never
     ? never
     : FlattenRelations<ExtractConnectTypeObject<T, "connect">>)
+  | (ExtractConnectOrCreateTypeObject<T> extends never
+    ? never
+    : FlattenRelations<ExtractConnectOrCreateTypeObject<T>>)
   | (ExtractUpdateTypeObject<T> extends never
     ? never
     : FlattenRelations<ExtractUpdateTypeObject<T>>)
