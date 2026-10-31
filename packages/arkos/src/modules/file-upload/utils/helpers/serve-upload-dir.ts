@@ -2,7 +2,12 @@ import express from "express";
 import fs from "fs";
 import path from "path";
 import AppError from "../../../error-handler/utils/app-error";
-import { ArkosRequest, ArkosRequestHandler } from "../../../../types";
+import {
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosRequestHandler,
+  ArkosResponse,
+} from "../../../../types";
 import type { UploadPrepare } from "../../../../types/upload";
 import ArkosRouter from "../../../../utils/arkos-router";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
@@ -57,25 +62,23 @@ export type ServeUploadDirOptions = {
   recursive?: boolean;
 };
 
-function buildStaticOptions(
-  overrides?: Parameters<typeof express.static>[1]
-) {
+function buildStaticOptions(overrides?: Parameters<typeof express.static>[1]) {
   const config = getArkosConfig();
 
   return deepmerge(
     deepmerge(DEFAULT_STATIC_OPTIONS, config.fileUpload?.expressStatic || {}),
-    overrides || {}
+    overrides || {},
   ) as Parameters<typeof express.static>[1];
 }
 
 function substituteParams(
   template: string,
-  values: Record<string, string>
+  values: Record<string, string>,
 ): string {
   return template
     .split("/")
     .map((segment) =>
-      segment.startsWith(":") ? values[segment.slice(1)] : segment
+      segment.startsWith(":") ? values[segment.slice(1)] : segment,
     )
     .join("/");
 }
@@ -96,16 +99,20 @@ function isSafeServedPath(value: string): boolean {
 
   return value
     .split("/")
-    .every(
-      (segment) => segment !== "" && segment !== "." && segment !== ".."
-    );
+    .every((segment) => segment !== "" && segment !== "." && segment !== "..");
 }
+
+type StaticError = {
+  code?: string;
+  status?: number;
+  statusCode?: number;
+};
 
 function notFound() {
   return new AppError("File not found", 404, "FileNotFound");
 }
 
-function getLocals(req: ArkosRequest): Record<string, any> {
+function getLocals(req: ArkosRequest): Record<string, unknown> {
   return req.res?.locals || {};
 }
 
@@ -147,7 +154,7 @@ function openApiConfig(dir: string) {
  */
 export function serveUploadDir(
   dir: string,
-  options: ServeUploadDirOptions = {}
+  options: ServeUploadDirOptions = {},
 ): IArkosRouter {
   const normalizedDir = normalizeUploadDir(dir);
 
@@ -157,12 +164,12 @@ export function serveUploadDir(
   });
 
   const mountPath = normalizeUploadUrlPath(
-    options.urlPath ?? `/${normalizedDir}`
+    options.urlPath ?? `/${normalizedDir}`,
   );
 
   if (mountPath === "/")
     throw new Error(
-      `Invalid upload URL path "/" for upload directory "${normalizedDir}": it must contain at least one segment.`
+      `Invalid upload URL path "/" for upload directory "${normalizedDir}": it must contain at least one segment.`,
     );
 
   assertSafeUploadPath(mountPath.replace(/^\//, ""), {
@@ -172,7 +179,7 @@ export function serveUploadDir(
 
   if (options.prepare !== undefined && typeof options.prepare !== "function")
     throw new Error(
-      `Invalid prepare function for upload directory "${normalizedDir}": expected a function.`
+      `Invalid prepare function for upload directory "${normalizedDir}": expected a function.`,
     );
 
   const dirParams = extractPathParams(`/${normalizedDir}`);
@@ -180,7 +187,7 @@ export function serveUploadDir(
 
   if (dirParams.length > 0 && !options.prepare)
     throw new Error(
-      `Dynamic upload directory "${normalizedDir}" requires a prepare function.`
+      `Dynamic upload directory "${normalizedDir}" requires a prepare function.`,
     );
 
   const recursive = options.recursive === true;
@@ -217,11 +224,10 @@ export function serveUploadDir(
 
         if (value === undefined)
           throw new Error(
-            `Missing required upload directory param ":${param}" for "${normalizedDir}" on "${req.method} ${req.originalUrl}".`
+            `Missing required upload directory param ":${param}" for "${normalizedDir}" on "${req.method} ${req.originalUrl}".`,
           );
 
-        if (!isSafeUploadParam(value))
-          return next(notFound());
+        if (!isSafeUploadParam(value)) return next(notFound());
       }
 
       const resolvedDir = substituteParams(normalizedDir, values);
@@ -273,7 +279,7 @@ export function serveUploadDir(
 
     const staticHandler = express.static(
       path.dirname(rootPath),
-      buildStaticOptions(options.expressStatic)
+      buildStaticOptions(options.expressStatic),
     );
 
     staticHandler(req, res, next);
@@ -286,7 +292,7 @@ export function serveUploadDir(
       return next(notFound());
 
     if (!recursive) {
-      const fileName = (req.params as any).fileName;
+      const fileName: unknown = req.params.fileName;
 
       if (
         typeof fileName !== "string" ||
@@ -295,9 +301,10 @@ export function serveUploadDir(
       )
         return next(notFound());
     } else {
-      const filePath = (req.params as any)[0] as string | undefined;
+      const filePath: unknown = req.params[0];
 
-      if (!filePath || !isSafeServedPath(filePath)) return next(notFound());
+      if (typeof filePath !== "string" || !isSafeServedPath(filePath))
+        return next(notFound());
     }
 
     req.url = stripMountSegments(req.url, mountSegments);
@@ -307,7 +314,7 @@ export function serveUploadDir(
     if (!dynamic)
       cachedStatic ??= express.static(
         rootPath,
-        buildStaticOptions(options.expressStatic)
+        buildStaticOptions(options.expressStatic),
       );
 
     const staticHandler =
@@ -318,10 +325,10 @@ export function serveUploadDir(
   };
 
   const handleStaticError = (
-    err: any,
-    req: any,
-    _res: any,
-    next: (error?: any) => void
+    err: StaticError | undefined,
+    req: ArkosRequest,
+    _res: ArkosResponse,
+    next: ArkosNextFunction,
   ) => {
     if (
       err?.code === "ENOENT" ||
@@ -329,12 +336,9 @@ export function serveUploadDir(
       err?.statusCode === 403
     )
       return next(
-        new AppError(
-          `File ${req.path} was not found`,
-          404,
-          "FileNotFound",
-          { filepath: req.path }
-        )
+        new AppError(`File ${req.path} was not found`, 404, "FileNotFound", {
+          filepath: req.path,
+        }),
       );
 
     next(err);
@@ -349,7 +353,7 @@ export function serveUploadDir(
     },
     resolveDirectory,
     serveExactFile,
-    handleStaticError as any
+    handleStaticError,
   );
 
   router.get(
@@ -359,8 +363,9 @@ export function serveUploadDir(
     },
     resolveDirectory,
     serveFolder,
-    handleStaticError as any
+    handleStaticError,
   );
 
   return router;
 }
+
