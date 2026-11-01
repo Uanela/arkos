@@ -26,9 +26,8 @@ So the design moved: authentication belongs to the router mount, exactly like ev
 
 ```ts
 router.use(
-  { authentication: fileUploadPolicy.View },
+  { path: "/tenants/:tenantId/files", authentication: fileUploadPolicy.View },
   arkos.serveUploadDir("/tenants/:tenantId/files", {
-    urlPath: "/tenants/:tenantId/files",
     prepare: async (req) => {
       const membership = await tenantMembers.find(
         req.user.id,
@@ -64,13 +63,13 @@ A side project has a `public` folder and a `private` folder. It needs one permis
 
 ```ts
 router.use(
-  { authentication: false },
-  arkos.serveUploadDir("/public/banners", { urlPath: "/banners" })
+  { path: "/banners", authentication: false },
+  arkos.serveUploadDir("/public/banners")
 );
 
 router.use(
-  { authentication: fileUploadPolicy.View },
-  arkos.serveUploadDir("/storage/acme", { urlPath: "/private/files" })
+  { path: "/private/files", authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/storage/acme")
 );
 ```
 
@@ -84,9 +83,8 @@ The first real complication is almost always per-user folders.
 
 ```ts
 router.use(
-  { authentication: fileUploadPolicy.View },
+  { path: "/users/me/avatar", authentication: fileUploadPolicy.View },
   arkos.serveUploadDir("/users/:userId/avatar/:fileName", {
-    urlPath: "/users/me/avatar",
     prepare: (req) => ({
       dirParams: {
         userId: req.user.id,
@@ -151,6 +149,7 @@ In `"registered"` mode, a folder that is neither served nor marked `serve: false
 The months of iteration and the final two-day design sprint produced as many rejected features as shipped ones.
 
 - **No `authorize` callback inside `serveUploadDir()`.** Authorization is one `router.use()` away, and keeping it there means rate limiting, validation, and the rest of the middleware stack still apply. Reimplementing that inside a helper would be a second, worse router.
+- **No `urlPath` option on `serveUploadDir()`.** The public folder is the `path` of the mount, next to the gate that protects it. The first version put the path on the helper, and mounting without a `path` then applied the gate to every endpoint of the upload router. Startup now builds each public URL from the mount chain and rejects folders that are never mounted or mounted outside `baseRoute`.
 - **No fallback to `req.params` for disk paths.** If `prepare` omits a param, the request fails. It does not quietly use the URL value.
 - **No dynamic exact URLs.** `urlPath: { exact: "/users/:id/avatar" }` is a folder URL pretending to be exact. It was rejected.
 - **No matching rule between `prepare` values and path params.** On the serve side, path params are routing. `prepare` is the source of truth. Checking that they are equal sounds safe until a legitimate use case needs a disk segment that is not in the URL.
@@ -194,7 +193,7 @@ The distinction matters because naming is part of the API. "Folder-level access 
 
 | Scale | What you write | What the DSL buys |
 | ----- | -------------- | ----------------- |
-| Small app | `serveUploadDir("/public/banners", { urlPath: "/banners" })` | Explicit public/private switch, no custom static plumbing |
+| Small app | `router.use({ path: "/banners", authentication: false }, serveUploadDir("/public/banners"))` | Explicit public/private switch, no custom static plumbing |
 | Mid-sized app | Add `prepare` for dynamic folders | Per-user and per-tenant paths without trusting the URL |
 | Large app | Add `prepareFile`, `overwrite`, exact URLs, `serve: false` | Deterministic names, conflict safety, startup guarantees |
 | Enterprise | Fine-grained policies inside `prepare`, signed URLs, custom sessions | Authorization and path resolution in one place, no second auth system |

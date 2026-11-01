@@ -26,7 +26,7 @@ In `"registered"` mode, a folder is reachable only if it is one of the built-in 
 
 ## Registering a folder
 
-`arkos.serveUploadDir(dir, options)` exposes a folder under `baseUploadDir`. `dir` is relative to `baseUploadDir`; `urlPath` is relative to `baseRoute`. Mount the returned router on the file upload custom router:
+`arkos.serveUploadDir(dir, options)` exposes a folder under `baseUploadDir`. `dir` is relative to `baseUploadDir`. The public URL folder is the `path` of the `use()` config it is mounted with, relative to `baseRoute`. Mount the returned router on the file upload custom router:
 
 ```ts title="src/modules/file-upload/file-upload.router.ts"
 import arkos, { ArkosRouter } from "arkos";
@@ -35,9 +35,8 @@ import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";
 const router = ArkosRouter();
 
 router.use(
-  { authentication: fileUploadPolicy.View },
+  { path: "/private/files", authentication: fileUploadPolicy.View },
   arkos.serveUploadDir("/storage/acme", {
-    urlPath: "/private/files",
     expressStatic: { maxAge: "1d" },
   })
 );
@@ -47,25 +46,30 @@ export default router;
 
 A file stored at `uploads/storage/acme/report.pdf` is then served at `GET /api/uploads/private/files/report.pdf`.
 
-`serveUploadDir()` adds no authentication by itself. The mount config is the gate:
+Arkos checks at startup that every `serveUploadDir()` is mounted with `use({ path })` on the file upload router. The public URL is built from the full mount chain, so a folder that is never mounted, or is mounted outside `baseRoute`, fails startup.
+
+`serveUploadDir()` adds no authentication by itself. The mount config is the gate, and its `path` scopes that gate to the folder only, so the other endpoints of the upload router are unaffected:
 
 ```ts
 // Authenticated and authorized through Arkos
 router.use(
-  { authentication: fileUploadPolicy.View },
-  arkos.serveUploadDir("/storage/acme", { urlPath: "/private/files" })
+  { path: "/private/files", authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/storage/acme")
 );
 
 // Explicitly public
 router.use(
-  { authentication: false },
-  arkos.serveUploadDir("/public/banners", { urlPath: "/banners" })
+  { path: "/banners", authentication: false },
+  arkos.serveUploadDir("/public/banners")
 );
 ```
 
+<Callout type="warning">
+A `use()` without a `path` mounts on `/`, which applies its `authentication` to every endpoint of the router. Always pass `path` when mounting `serveUploadDir()`.
+</Callout>
+
 | Option | Type | Description | Default |
 | ------ | ---- | ----------- | ------- |
-| `urlPath` | `string` | Public URL folder, relative to `baseRoute` | `"/" + dir` |
 | `prepare` | `UploadPrepare` | Resolves disk params and gates the request. Required for every dynamic folder. | — |
 | `expressStatic` | `Parameters<typeof express.static>[1]` | Per-folder overrides merged over the global `fileUpload.expressStatic` options. | — |
 | `recursive` | `boolean` | Allow nested folders. When `false` (default), only direct files of `dir` are served. | `false` |
@@ -76,8 +80,8 @@ Authentication belongs to the router mount, not to `serveUploadDir()`. This reus
 
 ```ts
 router.use(
-  { authentication: fileUploadPolicy.View },
-  arkos.serveUploadDir("/storage/acme", { urlPath: "/private/files" })
+  { path: "/private/files", authentication: fileUploadPolicy.View },
+  arkos.serveUploadDir("/storage/acme")
 );
 ```
 
@@ -89,8 +93,8 @@ Pass `authentication: false` on the mount to expose a folder without a login:
 
 ```ts
 router.use(
-  { authentication: false },
-  arkos.serveUploadDir("/public/banners", { urlPath: "/banners" })
+  { path: "/banners", authentication: false },
+  arkos.serveUploadDir("/public/banners")
 );
 ```
 
@@ -120,9 +124,8 @@ import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";
 const router = ArkosRouter();
 
 router.use(
-  { authentication: fileUploadPolicy.View },
+  { path: "/tenants/:tenantId/files", authentication: fileUploadPolicy.View },
   arkos.serveUploadDir("/tenants/:tenantId/files", {
-    urlPath: "/tenants/:tenantId/files",
     prepare: async (req) => {
       const membership = await tenantMembers.find(
         req.user.id,
@@ -161,9 +164,8 @@ export default fileUploadPolicy;
 
 ```ts title="src/modules/file-upload/file-upload.router.ts"
 router.use(
-  { authentication: fileUploadPolicy.View },
+  { path: "/tenants/:tenantId/files", authentication: fileUploadPolicy.View },
   arkos.serveUploadDir("/tenants/:tenantId/files", {
-    urlPath: "/tenants/:tenantId/files",
     prepare: async (req) => {
       const canViewAll = await fileUploadPolicy.canViewAllMultitenant(req.user);
 
@@ -192,9 +194,8 @@ A folder is dynamic when `dir` contains a `:param` segment. Dynamic folders requ
 
 ```ts
 router.use(
-  { authentication: false },
+  { path: "/downloads/:token/files", authentication: false },
   arkos.serveUploadDir("/downloads/:token/files", {
-    urlPath: "/downloads/:token/files",
     prepare: async (req) => {
       const grant = await downloadGrants.findValid(req.params.token);
 
@@ -219,13 +220,12 @@ Param values must be safe path segments:
 
 ## Serving a single file (exact URLs)
 
-When `dir` resolves to a **file** rather than a directory, Arkos serves that file directly. This is how static public URLs such as `/users/me/avatar` are served: `urlPath` is static, `dir` points at the file, and `prepare` supplies the dynamic parts of the disk path.
+When `dir` resolves to a **file** rather than a directory, Arkos serves that file directly. This is how static public URLs such as `/users/me/avatar` are served: the `use()` `path` is static, `dir` points at the file, and `prepare` supplies the dynamic parts of the disk path.
 
 ```ts
 router.use(
-  { authentication: fileUploadPolicy.View },
+  { path: "/users/me/avatar", authentication: fileUploadPolicy.View },
   arkos.serveUploadDir("/users/:userId/avatar/:fileName", {
-    urlPath: "/users/me/avatar",
     prepare: (req) => ({
       dirParams: {
         userId: req.user.id,

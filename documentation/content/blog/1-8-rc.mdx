@@ -177,9 +177,8 @@ import fileUploadPolicy from "./file-upload.policy";
 const router = ArkosRouter();
 
 router.use(
-  { authentication: fileUploadPolicy.View },
+  { path: "/tenants/:tenantId/files", authentication: fileUploadPolicy.View },
   arkos.serveUploadDir("/tenants/:tenantId/files", {
-    urlPath: "/tenants/:tenantId/files",
     prepare: async (req) => {
       const membership = await tenants.findMembership(
         req.user.id,
