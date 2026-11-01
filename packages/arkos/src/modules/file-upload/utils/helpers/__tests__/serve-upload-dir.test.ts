@@ -5,6 +5,7 @@ import ArkosRouter from "../../../../../utils/arkos-router";
 import { getArkosConfig } from "../../../../../server";
 import { serveUploadDir } from "../serve-upload-dir";
 import { uploadServingRegistry } from "../upload-serving.registry";
+import { resolveUploadServeSources } from "../upload-serving-validation";
 
 jest.mock("../../../../../server", () => ({
   getArkosConfig: jest.fn(),
@@ -23,7 +24,10 @@ jest.mock("../upload-path.helper", () => ({
 const baseUploadDir = path.resolve(process.cwd(), "uploads");
 
 describe("serveUploadDir", () => {
-  let fakeRouter: { get: jest.Mock };
+  let fakeRouter: {
+    get: jest.Mock;
+    _arkos: { routes: unknown[]; mounts: Array<{ parent: unknown; path: unknown }> };
+  };
   let getArguments: any[];
   let statSpy: jest.SpyInstance;
 
@@ -32,7 +36,7 @@ describe("serveUploadDir", () => {
     jest.clearAllMocks();
 
     getArguments = [];
-    fakeRouter = { get: jest.fn() };
+    fakeRouter = { get: jest.fn(), _arkos: { routes: [], mounts: [] } };
     (ArkosRouter as unknown as jest.Mock).mockReturnValue(fakeRouter);
 
     (getArkosConfig as jest.Mock).mockReturnValue({
@@ -74,31 +78,62 @@ describe("serveUploadDir", () => {
     return { resolveDirectory, serveFile };
   };
 
-  it("defaults the public path to /<dir> and serves direct files only", () => {
+  const mount = (urlPath: string, path: unknown = `/api/uploads${urlPath}`) =>
+    fakeRouter._arkos.mounts.push({ parent: { routes: [], mounts: [] }, path });
+
+  it("registers routes relative to the mount and serves direct files only", () => {
     serveUploadDir("storage/acme");
 
-    expect(getFileRouteArgs()[0].path).toBe("/storage/acme");
-    expect(getFolderRouteArgs()[0].path).toBe("/storage/acme/:fileName");
+    expect(getFileRouteArgs()[0].path).toBe("/");
+    expect(getFolderRouteArgs()[0].path).toBe("/:fileName");
     expect(getFolderRouteArgs().length).toBe(4);
   });
 
-  it("accepts a custom urlPath relative to baseRoute", () => {
-    serveUploadDir("storage/acme", { urlPath: "/private/files" });
+  it("enables mergeParams so prepare can read mount params", () => {
+    serveUploadDir("users/:userId/files", { prepare: () => ({ dirParams: {} }) });
 
-    expect(getFolderRouteArgs()[0].path).toBe("/private/files/:fileName");
+    expect(ArkosRouter).toHaveBeenCalledWith({ mergeParams: true });
+  });
+
+  it("fails validation until the router is mounted", () => {
+    serveUploadDir("storage/acme");
+
+    expect(() => resolveUploadServeSources("/api/uploads")).toThrow(
+      /not mounted/
+    );
+  });
+
+  it("uses the mount path from use() as the public path", () => {
+    serveUploadDir("storage/acme");
+    mount("/private/files");
+
+    expect(resolveUploadServeSources("/api/uploads")[0].urlPath).toBe(
+      "/private/files"
+    );
   });
 
   it("rejects the root URL path", () => {
-    expect(() => serveUploadDir("storage/acme", { urlPath: "/" })).toThrow();
+    serveUploadDir("storage/acme");
+    mount("/");
+
+    expect(() => resolveUploadServeSources("/api/uploads")).toThrow();
+  });
+
+  it("rejects a mount without a string path", () => {
+    serveUploadDir("storage/acme");
+    mount("", /private/);
+
+    expect(() => resolveUploadServeSources("/api/uploads")).toThrow();
   });
 
   it("normalizes a leading slash instead of rejecting it", () => {
     serveUploadDir("/storage/acme");
+    mount("/storage/acme");
 
-    expect(uploadServingRegistry.getServeRegistrations()[0].dir).toBe(
+    expect(resolveUploadServeSources("/api/uploads")[0].dir).toBe(
       "storage/acme"
     );
-    expect(getFolderRouteArgs()[0].path).toBe("/storage/acme/:fileName");
+    expect(getFolderRouteArgs()[0].path).toBe("/:fileName");
   });
 
   it("rejects traversing directories", () => {
@@ -106,17 +141,12 @@ describe("serveUploadDir", () => {
   });
 
   it("requires a prepare function for dynamic directories", () => {
-    expect(() =>
-      serveUploadDir("users/:userId/files", {
-        urlPath: "/users/:userId/files",
-      })
-    ).toThrow();
+    expect(() => serveUploadDir("users/:userId/files")).toThrow();
   });
 
   it("accepts dynamic directories with a prepare function", () => {
     expect(() =>
       serveUploadDir("users/:userId/files", {
-        urlPath: "/users/:userId/files",
         prepare: () => ({ dirParams: { userId: "1" } }),
       })
     ).not.toThrow();
@@ -135,9 +165,10 @@ describe("serveUploadDir", () => {
   });
 
   it("registers the directory for startup validation", () => {
-    serveUploadDir("storage/acme", { urlPath: "/private/files" });
+    serveUploadDir("storage/acme");
+    mount("/private/files");
 
-    expect(uploadServingRegistry.getServeRegistrations()).toEqual([
+    expect(resolveUploadServeSources("/api/uploads")).toEqual([
       expect.objectContaining({
         dir: "storage/acme",
         urlPath: "/private/files",
@@ -152,12 +183,10 @@ describe("serveUploadDir", () => {
 
   it("records prepare presence for dynamic directories", () => {
     const prepare = () => ({ dirParams: { userId: "1" } });
-    serveUploadDir("users/:userId/files", {
-      urlPath: "/users/:userId/files",
-      prepare,
-    });
+    serveUploadDir("users/:userId/files", { prepare });
+    mount("/users/:userId/files");
 
-    expect(uploadServingRegistry.getServeRegistrations()).toEqual([
+    expect(resolveUploadServeSources("/api/uploads")).toEqual([
       expect.objectContaining({
         dir: "users/:userId/files",
         dynamic: true,
@@ -172,10 +201,7 @@ describe("serveUploadDir", () => {
     const prepare = jest
       .fn()
       .mockResolvedValue({ dirParams: { userId: "42" } });
-    serveUploadDir("users/:userId/files", {
-      urlPath: "/users/:userId/files",
-      prepare,
-    });
+    serveUploadDir("users/:userId/files", { prepare });
 
     const { resolveDirectory } = getStaticHandler(1);
     const next = jest.fn();
@@ -196,7 +222,6 @@ describe("serveUploadDir", () => {
 
   it("does not fall back to req.params when prepare omits a dir param", async () => {
     serveUploadDir("users/:userId/files", {
-      urlPath: "/users/:userId/files",
       prepare: () => ({ dirParams: {} }),
     });
 
@@ -211,7 +236,6 @@ describe("serveUploadDir", () => {
 
   it("rejects unsafe dir params from prepare", async () => {
     serveUploadDir("users/:userId/files", {
-      urlPath: "/users/:userId/files",
       prepare: () => ({ dirParams: { userId: "../admin" } }),
     });
 
@@ -248,7 +272,6 @@ describe("serveUploadDir", () => {
       isDirectory: () => false,
     } as any);
     serveUploadDir("users/:userId/avatar", {
-      urlPath: "/users/:userId/avatar",
       prepare: () => ({ dirParams: { userId: "42" } }),
     });
 
@@ -349,13 +372,13 @@ describe("serveUploadDir", () => {
     });
   });
 
-  it("rewrites the request URL before delegating to express.static", () => {
+  it("delegates the mount-relative request URL to express.static", () => {
     serveUploadDir("storage/acme", { recursive: true });
 
     const { serveFile } = getStaticHandler(1);
     const next = jest.fn();
     const req: any = {
-      url: "/storage/acme/a/b.png?width=100",
+      url: "/a/b.png?width=100",
       params: { 0: "a/b.png" },
       __arkos: {
         uploadPath: path.join(baseUploadDir, "storage/acme"),

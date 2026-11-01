@@ -33,6 +33,7 @@ export function applyArkosRouterProxy<T extends object>(
   (target as InternalIArkosRouter)._arkos = {
     options,
     routes: [],
+    mounts: [],
   };
 
   return new Proxy(target, {
@@ -87,6 +88,12 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             );
 
           const flatHandlers = flattenHandlers(handlers);
+
+          for (const handler of flatHandlers)
+            (handler as InternalIArkosRouter)._arkos?.mounts.push({
+              parent: (target as InternalIArkosRouter)._arkos,
+              path,
+            });
 
           handlers = flatHandlers.map((handler: ArkosAnyRequestHandler) => {
             if (!handler || typeof handler !== "function")

@@ -1,4 +1,5 @@
 import type { UploadUrlPath } from "../../../../types/upload";
+import type { ArkosRouterState } from "../../../../utils/arkos-router/types";
 
 export type UploadWriteRegistration = {
   dir?: string;
@@ -19,9 +20,17 @@ export type UploadServeRegistration = {
   hasPrepare: boolean;
 };
 
+export type UploadServeSource = Omit<
+  UploadServeRegistration,
+  "urlPath" | "pathParams"
+> & {
+  router: ArkosRouterState;
+};
+
 export class UploadServingRegistry {
   private writeRegistrations: UploadWriteRegistration[] = [];
   private serveRegistrations: UploadServeRegistration[] = [];
+  private serveSources: UploadServeSource[] = [];
   private findFileServingEnabled = false;
 
   registerWrite(registration: UploadWriteRegistration) {
@@ -32,12 +41,20 @@ export class UploadServingRegistry {
     this.serveRegistrations.push(registration);
   }
 
+  registerServeSource(source: UploadServeSource) {
+    this.serveSources.push(source);
+  }
+
   getWriteRegistrations() {
     return [...this.writeRegistrations];
   }
 
   getServeRegistrations() {
     return [...this.serveRegistrations];
+  }
+
+  getServeSources() {
+    return [...this.serveSources];
   }
 
   setFindFileServingEnabled(enabled: boolean) {
@@ -51,6 +68,7 @@ export class UploadServingRegistry {
   reset() {
     this.writeRegistrations = [];
     this.serveRegistrations = [];
+    this.serveSources = [];
     this.findFileServingEnabled = false;
   }
 }

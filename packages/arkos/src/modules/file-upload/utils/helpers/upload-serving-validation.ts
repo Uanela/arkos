@@ -13,6 +13,7 @@ import {
   UploadServeRegistration,
   UploadWriteRegistration,
 } from "./upload-serving.registry";
+import type { ArkosRouterState } from "../../../../utils/arkos-router/types";
 
 type TemplateMatch = {
   params: Record<string, string>;
@@ -181,6 +182,70 @@ function warnAboutUnusedUrlParams(
     );
 }
 
+function mountedUrlPaths(
+  router: ArkosRouterState,
+  trail: ArkosRouterState[] = []
+): string[] {
+  if (trail.includes(router))
+    throw new Error("Circular router mount detected while resolving upload URLs.");
+
+  if (router.mounts.length === 0) return ["/"];
+
+  return router.mounts.flatMap(({ parent, path }) => {
+    if (typeof path !== "string")
+      throw new Error(
+        `Upload routers must be mounted with a string path, received ${String(path)}.`
+      );
+
+    return mountedUrlPaths(parent, [...trail, router]).map((base) =>
+      normalizeUploadUrlPath(`${base.replace(/\/$/, "")}/${path.replace(/^\//, "")}`)
+    );
+  });
+}
+
+/**
+ * Resolves each arkos.serveUploadDir() into the URL paths it is mounted at,
+ * relative to baseRoute, by walking the routers it was mounted through.
+ */
+export function resolveUploadServeSources(
+  baseRoute: string
+): UploadServeRegistration[] {
+  const normalizedBaseRoute = normalizeBaseRoute(baseRoute);
+  const basePrefix =
+    normalizedBaseRoute === "/" ? "/" : `${normalizedBaseRoute}/`;
+
+  return uploadServingRegistry.getServeSources().flatMap((source) => {
+    if (source.router.mounts.length === 0)
+      throw new Error(
+        `Upload directory "${source.dir}" is not mounted. Mount the router returned by arkos.serveUploadDir() with use({ path }) on the file upload router.`
+      );
+
+    return mountedUrlPaths(source.router).map((fullPath) => {
+      if (fullPath === normalizedBaseRoute || !fullPath.startsWith(basePrefix))
+        throw new Error(
+          `Upload directory "${source.dir}" is mounted at "${fullPath}", outside fileUpload.baseRoute "${normalizedBaseRoute}". Mount it on the file upload router.`
+        );
+
+      const urlPath = `/${fullPath.slice(basePrefix.length)}`;
+
+      assertSafeUploadPath(urlPath.replace(/^\//, ""), {
+        allowParams: true,
+        label: "upload URL path",
+      });
+
+      return {
+        dir: source.dir,
+        urlPath,
+        dirParams: source.dirParams,
+        pathParams: extractPathParams(urlPath),
+        recursive: source.recursive,
+        dynamic: source.dynamic,
+        hasPrepare: source.hasPrepare,
+      };
+    });
+  });
+}
+
 /**
  * Validates the upload serving registrations collected while building the
  * routers. Must run once, after every router has been constructed.
@@ -192,7 +257,10 @@ export function validateUploadServingConfig() {
   const baseRoute = config.fileUpload?.baseRoute || "/api/uploads";
   const suppressUnusedUrlParams =
     config.warnings?.fileUpload?.suppressUnusedUrlParams === true;
-  const serveRegistrations = uploadServingRegistry.getServeRegistrations();
+  const serveRegistrations = [
+    ...uploadServingRegistry.getServeRegistrations(),
+    ...resolveUploadServeSources(baseRoute),
+  ];
   const writeRegistrations = uploadServingRegistry.getWriteRegistrations();
 
   const seenServePaths = new Map<string, string>();

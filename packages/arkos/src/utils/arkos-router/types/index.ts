@@ -46,15 +46,21 @@ export type InferValidationType<T, Fallback> = T extends ZodType
 
 export type PathParams = string | RegExp | Array<string | RegExp>;
 
+export type ArkosRouterState = {
+  options?: ArkosRouterOptions;
+  routes: Array<{
+    handler: ArkosAnyRequestHandler;
+    config: ArkosRouteConfig;
+    method: string;
+  }>;
+  mounts: Array<{
+    parent: ArkosRouterState;
+    path: PathParams;
+  }>;
+};
+
 export type InternalIArkosRouter = IArkosRouter & {
-  _arkos: {
-    options?: ArkosRouterOptions;
-    routes: Array<{
-      handler: ArkosAnyRequestHandler;
-      config: ArkosRouteConfig;
-      method: string;
-    }>;
-  };
+  _arkos: ArkosRouterState;
 };
 
 /**

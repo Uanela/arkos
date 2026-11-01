@@ -10,7 +10,10 @@ import {
 } from "../../../../types";
 import type { UploadPrepare } from "../../../../types/upload";
 import ArkosRouter from "../../../../utils/arkos-router";
-import { IArkosRouter } from "../../../../utils/arkos-router/types";
+import {
+  IArkosRouter,
+  InternalIArkosRouter,
+} from "../../../../utils/arkos-router/types";
 import { extractPathParams } from "../../../../utils/arkos-router/utils/helpers";
 import { getArkosConfig } from "../../../../server";
 import deepmerge from "../../../../utils/helpers/deepmerge.helper";
@@ -19,13 +22,9 @@ import {
   isRealPathInside,
   isSafeUploadParam,
   normalizeUploadDir,
-  normalizeUploadUrlPath,
   resolveUploadPath,
 } from "./upload-path.helper";
-import {
-  uploadServingRegistry,
-  UploadServeRegistration,
-} from "./upload-serving.registry";
+import { uploadServingRegistry } from "./upload-serving.registry";
 
 const DEFAULT_STATIC_OPTIONS = {
   maxAge: "1y",
@@ -38,12 +37,6 @@ const DEFAULT_STATIC_OPTIONS = {
 };
 
 export type ServeUploadDirOptions = {
-  /**
-   * Public URL folder, relative to the file upload `baseRoute`.
-   *
-   * @default `"/" + dir`
-   */
-  urlPath?: string;
   /**
    * Resolves the disk parameters for this folder. Required for every dynamic
    * folder (`:param` in `dir`). It may be async and may throw to deny the
@@ -81,17 +74,6 @@ function substituteParams(
       segment.startsWith(":") ? values[segment.slice(1)] : segment,
     )
     .join("/");
-}
-
-function stripMountSegments(url: string, segmentCount: number): string {
-  const queryIndex = url.indexOf("?");
-  const rawPath = queryIndex === -1 ? url : url.slice(0, queryIndex);
-  const query = queryIndex === -1 ? "" : url.slice(queryIndex);
-  const parts = rawPath.split("/");
-  const start = rawPath.startsWith("/") ? segmentCount + 1 : segmentCount;
-  const remainder = parts.slice(start).join("/");
-
-  return `/${remainder}${query}`;
 }
 
 function isSafeServedPath(value: string): boolean {
@@ -144,13 +126,15 @@ function openApiConfig(dir: string) {
  *
  * ```ts
  * fileUploadRouter.use(
- *   { authentication: fileUploadPolicy.View },
- *   arkos.serveUploadDir("/storage/acme", { urlPath: "/private/files" })
+ *   { path: "/private/files", authentication: fileUploadPolicy.View },
+ *   arkos.serveUploadDir("/storage/acme")
  * );
  * ```
  *
- * When the resolved `dir` is a file, the route serves that file directly.
- * When it is a directory, the remainder of the request URL is served from it.
+ * The `path` of the `use()` config is the public URL folder, relative to the
+ * file upload `baseRoute`. When the resolved `dir` is a file, the route serves
+ * that file directly. When it is a directory, the remainder of the request URL
+ * is served from it.
  */
 export function serveUploadDir(
   dir: string,
@@ -163,27 +147,12 @@ export function serveUploadDir(
     label: "upload directory",
   });
 
-  const mountPath = normalizeUploadUrlPath(
-    options.urlPath ?? `/${normalizedDir}`,
-  );
-
-  if (mountPath === "/")
-    throw new Error(
-      `Invalid upload URL path "/" for upload directory "${normalizedDir}": it must contain at least one segment.`,
-    );
-
-  assertSafeUploadPath(mountPath.replace(/^\//, ""), {
-    allowParams: true,
-    label: "upload URL path",
-  });
-
   if (options.prepare !== undefined && typeof options.prepare !== "function")
     throw new Error(
       `Invalid prepare function for upload directory "${normalizedDir}": expected a function.`,
     );
 
   const dirParams = extractPathParams(`/${normalizedDir}`);
-  const pathParams = extractPathParams(mountPath);
 
   if (dirParams.length > 0 && !options.prepare)
     throw new Error(
@@ -192,22 +161,18 @@ export function serveUploadDir(
 
   const recursive = options.recursive === true;
   const dynamic = dirParams.length > 0;
-  const mountSegments = mountPath.split("/").filter(Boolean).length;
 
-  const registration: UploadServeRegistration = {
+  const router = ArkosRouter({ mergeParams: true });
+  let cachedStatic: express.RequestHandler | undefined;
+
+  uploadServingRegistry.registerServeSource({
     dir: normalizedDir,
-    urlPath: mountPath,
     dirParams,
-    pathParams,
     recursive,
     dynamic,
     hasPrepare: !!options.prepare,
-  };
-
-  uploadServingRegistry.registerServe(registration);
-
-  const router = ArkosRouter();
-  let cachedStatic: express.RequestHandler | undefined;
+    router: (router as InternalIArkosRouter)._arkos,
+  });
 
   const resolveDirectory: ArkosRequestHandler = async (req, _res, next) => {
     try {
@@ -307,8 +272,6 @@ export function serveUploadDir(
         return next(notFound());
     }
 
-    req.url = stripMountSegments(req.url, mountSegments);
-
     if (req.url.split("?")[0] === "/") return next(notFound());
 
     if (!dynamic)
@@ -348,7 +311,7 @@ export function serveUploadDir(
 
   router.get(
     {
-      path: mountPath,
+      path: "/",
       experimental: { openapi },
     },
     resolveDirectory,
@@ -358,7 +321,7 @@ export function serveUploadDir(
 
   router.get(
     {
-      path: `${mountPath}${recursive ? "/*" : "/:fileName"}`,
+      path: recursive ? "/*" : "/:fileName",
       experimental: { openapi },
     },
     resolveDirectory,
