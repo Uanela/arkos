@@ -149,7 +149,6 @@ In `"registered"` mode, a folder that is neither served nor marked `serve: false
 The months of iteration and the final two-day design sprint produced as many rejected features as shipped ones.
 
 - **No `authorize` callback inside `serveUploadDir()`.** Authorization is one `router.use()` away, and keeping it there means rate limiting, validation, and the rest of the middleware stack still apply. Reimplementing that inside a helper would be a second, worse router.
-- **No `urlPath` option on `serveUploadDir()`.** The public folder is the `path` of the mount, next to the gate that protects it. The first version put the path on the helper, and mounting without a `path` then applied the gate to every endpoint of the upload router. Startup now builds each public URL from the mount chain and rejects folders that are never mounted or mounted outside `baseRoute`.
 - **No fallback to `req.params` for disk paths.** If `prepare` omits a param, the request fails. It does not quietly use the URL value.
 - **No dynamic exact URLs.** `urlPath: { exact: "/users/:id/avatar" }` is a folder URL pretending to be exact. It was rejected.
 - **No matching rule between `prepare` values and path params.** On the serve side, path params are routing. `prepare` is the source of truth. Checking that they are equal sounds safe until a legitimate use case needs a disk segment that is not in the URL.
